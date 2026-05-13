@@ -227,16 +227,3 @@ If the model file is missing, the app gracefully handles the error and returns `
 
 ---
 
-## License
-
-This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
-
----
-
-<div align="center">
-
-Built for farmers, by farmers. 🌾
-
-**KrushiAI** — *Krushi* (कृषि) means *Agriculture* in Sanskrit.
-
-</div>
