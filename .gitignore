@@ -20,6 +20,9 @@ venv/
 *.pt
 *.pth
 
+# Claude Code
+.claude/
+
 # IDE
 .idea/
 .vscode/
