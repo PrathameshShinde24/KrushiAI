@@ -747,6 +747,56 @@ body, .stApp,
   font-family: var(--font) !important; color: var(--text) !important;
 }
 
+/* ── News Cards ────────────────────────────────────────────────── */
+.news-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 18px 20px;
+  margin-bottom: 14px;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.news-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 24px rgba(0,0,0,0.25);
+}
+.nc-meta {
+  display: flex; justify-content: space-between;
+  align-items: center; margin-bottom: 8px;
+}
+.nc-source {
+  font-size: 0.72rem; font-weight: 600;
+  color: var(--green); text-transform: uppercase; letter-spacing: 0.05em;
+}
+.nc-date { font-size: 0.72rem; color: var(--text-2); }
+.nc-title {
+  font-size: 0.92rem; font-weight: 600;
+  color: var(--text); margin: 0 0 8px; line-height: 1.45;
+}
+.nc-desc {
+  font-size: 0.82rem; color: var(--text-2);
+  margin: 0 0 12px; line-height: 1.55;
+}
+.nc-link {
+  font-size: 0.8rem; font-weight: 600;
+  color: var(--green); text-decoration: none;
+}
+.nc-link:hover { color: var(--green-400); text-decoration: underline; }
+
+/* ── Selectbox (language picker etc.) ──────────────────────────── */
+[data-testid="stSelectbox"] > div > div {
+  background: var(--surface-2) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: var(--r) !important;
+  color: var(--text) !important;
+  font-family: var(--font) !important;
+  font-size: 13px !important;
+}
+[data-testid="stSelectbox"] label {
+  font-family: var(--font) !important;
+  font-size: 12px !important; color: var(--text-2) !important;
+}
+
 /* Column padding */
 [data-testid="column"] { padding: 0 6px !important; }
 
