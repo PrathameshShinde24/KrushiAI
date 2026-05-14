@@ -1,0 +1,298 @@
+"""
+KrushiAI — Internationalisation (i18n)
+Supported languages: English (en), Hindi (hi), Marathi (mr)
+Usage: from utils.i18n import t, LANGUAGE_OPTIONS
+"""
+
+TRANSLATIONS = {
+    # ── English ───────────────────────────────────────────────────────────────
+    "en": {
+        "app_name": "KrushiAI", "tagline": "Plant Disease Intelligence",
+        "sign_out": "↩  Sign Out", "main_menu": "MAIN MENU",
+        "language": "Language",
+        # nav
+        "nav_dashboard": "Dashboard", "nav_scanner": "AI Scanner",
+        "nav_history": "Scan History", "nav_weather": "Weather",
+        "nav_news": "Agri Hub", "nav_schemes": "Gov Schemes",
+        "nav_crops": "Crop Advisor", "nav_profile": "Profile",
+        # auth
+        "welcome_back": "Welcome back", "create_account": "Create your account",
+        "email": "Email Address", "password": "Password", "full_name": "Full Name",
+        "sign_in": "Sign In →", "sign_up": "Create Account →",
+        "no_account": "Don't have an account?", "have_account": "Already have an account?",
+        "create_free": "Create free account", "sign_in_instead": "Sign in instead",
+        # dashboard
+        "good_day": "Good day", "plant_health_overview": "Plant Health Overview",
+        "dashboard_sub": "Here's a summary of your field diagnostics and recent activity.",
+        "total_scans": "Total Scans", "healthy": "Healthy",
+        "diseased": "Diseased", "health_rate": "Health Rate",
+        "recent_scans": "Recent Scans", "quick_actions": "Quick Actions",
+        "no_scans_yet": "No scans yet",
+        "no_scans_sub": "Run your first leaf scan to see results here.",
+        "new_scan": "New Scan", "new_scan_sub": "Diagnose a leaf image with AI",
+        "start_scanning": "Start Scanning →", "view_history": "View History",
+        "view_history_sub": "Review past diagnostics & trends",
+        "open_history": "Open History →",
+        # scanner
+        "ai_scanner": "AI Diagnostic Scanner",
+        "scanner_sub": "Upload or capture a leaf image. Our CNN model identifies diseases with high accuracy.",
+        "image_input": "Image Input", "upload_file": "📁  Upload File", "camera": "📷  Camera",
+        "analysis_result": "Analysis Result", "analyze_leaf": "🔬  Analyze Leaf",
+        "awaiting_analysis": "Awaiting Analysis",
+        "awaiting_sub": "Upload a leaf image and click Analyze Leaf to see results.",
+        "drop_image": "Drop your leaf image here",
+        "supports": "Supports JPG, JPEG, PNG · Max 200MB",
+        "good_lighting": "Ensure clear focus and good lighting",
+        "allow_camera": "Allow camera access",
+        "camera_hint": "Point camera at the leaf, ensure clear focus",
+        "confidence": "confidence", "severity": "Severity",
+        "treatment_plan": "Treatment Plan", "class_probabilities": "Class Probabilities",
+        # history
+        "scan_history": "Scan History",
+        "history_sub": "Review past diagnostics, track disease trends, and monitor field health over time.",
+        "avg_confidence": "Avg Confidence", "no_history": "No scans yet",
+        "no_history_sub": "Your scan history will appear here after your first analysis.",
+        "scan_records": "Scan Records", "search_placeholder": "🔍  Search by disease name…",
+        "disease_breakdown": "Disease Breakdown", "scans_over_time": "Scans Over Time",
+        # weather
+        "weather": "Weather & Disease Risk",
+        "weather_sub": "Get live weather updates and pomegranate disease risk alerts for your location.",
+        "enter_city": "Enter your city name", "get_weather": "Get Weather →",
+        "temperature": "Temperature", "humidity": "Humidity",
+        "wind_speed": "Wind Speed", "condition": "Condition",
+        "disease_risk": "Disease Risk Level", "feels_like": "Feels Like",
+        "risk_high": "High Risk", "risk_medium": "Medium Risk", "risk_low": "Low Risk",
+        "risk_advice": "Weather Advisory", "city_placeholder": "e.g. Pune, Mumbai, Nashik",
+        "current_weather_in": "Current Weather in",
+        # crop advisor
+        "crop_advisor": "Crop Advisor",
+        "crop_advisor_sub": "Get personalised crop recommendations based on your soil, season, and local conditions.",
+        "soil_type": "Soil Type", "season": "Season", "region": "Region",
+        "water_availability": "Water Availability",
+        "get_recommendations": "Get Crop Recommendations →",
+        "recommended_crops": "Recommended Crops", "best_for": "Best for",
+        "growing_period": "Growing Period", "water_need": "Water Need",
+        "yield_potential": "Yield Potential", "pro_tip": "Pro Tip",
+        "no_crops": "No matching crops found. Try different soil or season.",
+        # schemes
+        "gov_schemes": "Government Schemes",
+        "schemes_sub": "Explore central government schemes designed to support Indian farmers.",
+        "search_schemes": "🔍  Search schemes by name or keyword…",
+        "all_categories": "All Categories", "apply_now": "How to Apply",
+        "eligibility": "Eligibility", "benefits": "Benefits",
+        "category": "Category", "visit_website": "Official Website →",
+        "ministry": "Ministry",
+        # agri hub
+        "agri_hub": "Agri Hub",
+        "agri_hub_sub": "Latest agricultural news, expert farming tips, and field insights.",
+        "latest_news": "Latest Agri News", "tip_of_day": "Farming Tips",
+        "read_more": "Read more →", "no_news": "Could not load news. Check your connection.",
+        # profile
+        "profile": "Profile & Settings",
+        "profile_sub": "Manage your account information, security, and preferences.",
+        "account_info": "Account Information", "security": "Security",
+        "change_password": "🔒 Change Password", "save_changes": "Save Changes",
+        "current_password": "Current Password", "new_password": "New Password",
+        "confirm_password": "Confirm Password", "update_password": "Update Password",
+        "member_since": "Member Since",
+    },
+
+    # ── Hindi ─────────────────────────────────────────────────────────────────
+    "hi": {
+        "app_name": "KrushiAI", "tagline": "पौधे रोग पहचान",
+        "sign_out": "↩  साइन आउट", "main_menu": "मुख्य मेनू",
+        "language": "भाषा",
+        # nav
+        "nav_dashboard": "डैशबोर्ड", "nav_scanner": "AI स्कैनर",
+        "nav_history": "स्कैन इतिहास", "nav_weather": "मौसम",
+        "nav_news": "कृषि हब", "nav_schemes": "सरकारी योजनाएं",
+        "nav_crops": "फसल सलाहकार", "nav_profile": "प्रोफ़ाइल",
+        # auth
+        "welcome_back": "वापस स्वागत है", "create_account": "अपना खाता बनाएं",
+        "email": "ईमेल पता", "password": "पासवर्ड", "full_name": "पूरा नाम",
+        "sign_in": "साइन इन करें →", "sign_up": "खाता बनाएं →",
+        "no_account": "खाता नहीं है?", "have_account": "पहले से खाता है?",
+        "create_free": "मुफ्त खाता बनाएं", "sign_in_instead": "साइन इन करें",
+        # dashboard
+        "good_day": "नमस्ते", "plant_health_overview": "पौधे स्वास्थ्य सारांश",
+        "dashboard_sub": "आपके खेत की जांच और हाल की गतिविधि का सारांश।",
+        "total_scans": "कुल स्कैन", "healthy": "स्वस्थ",
+        "diseased": "रोगग्रस्त", "health_rate": "स्वास्थ्य दर",
+        "recent_scans": "हाल के स्कैन", "quick_actions": "त्वरित क्रियाएं",
+        "no_scans_yet": "अभी तक कोई स्कैन नहीं",
+        "no_scans_sub": "परिणाम देखने के लिए पहला पत्ती स्कैन करें।",
+        "new_scan": "नया स्कैन", "new_scan_sub": "AI से पत्ती की जांच करें",
+        "start_scanning": "स्कैन शुरू करें →", "view_history": "इतिहास देखें",
+        "view_history_sub": "पिछली जांच और रुझान देखें",
+        "open_history": "इतिहास खोलें →",
+        # scanner
+        "ai_scanner": "AI डायग्नोस्टिक स्कैनर",
+        "scanner_sub": "पत्ती की छवि अपलोड करें। हमारा CNN मॉडल रोगों की सटीक पहचान करता है।",
+        "image_input": "छवि इनपुट", "upload_file": "📁  फ़ाइल अपलोड करें", "camera": "📷  कैमरा",
+        "analysis_result": "विश्लेषण परिणाम", "analyze_leaf": "🔬  पत्ती का विश्लेषण करें",
+        "awaiting_analysis": "विश्लेषण की प्रतीक्षा",
+        "awaiting_sub": "पत्ती की छवि अपलोड करें और विश्लेषण करें पर क्लिक करें।",
+        "drop_image": "यहाँ पत्ती की छवि डालें",
+        "supports": "JPG, JPEG, PNG · अधिकतम 200MB",
+        "good_lighting": "स्पष्ट फोकस और अच्छी रोशनी सुनिश्चित करें",
+        "allow_camera": "कैमरा एक्सेस दें",
+        "camera_hint": "पत्ती पर कैमरा लगाएं, स्पष्ट फोकस सुनिश्चित करें",
+        "confidence": "विश्वास", "severity": "गंभीरता",
+        "treatment_plan": "उपचार योजना", "class_probabilities": "वर्ग संभावनाएं",
+        # history
+        "scan_history": "स्कैन इतिहास",
+        "history_sub": "पिछली जांच देखें, रोग के रुझान ट्रैक करें।",
+        "avg_confidence": "औसत विश्वास", "no_history": "अभी तक कोई स्कैन नहीं",
+        "no_history_sub": "पहले विश्लेषण के बाद आपका स्कैन इतिहास यहाँ दिखेगा।",
+        "scan_records": "स्कैन रिकॉर्ड", "search_placeholder": "🔍  रोग के नाम से खोजें…",
+        "disease_breakdown": "रोग विवरण", "scans_over_time": "समय के साथ स्कैन",
+        # weather
+        "weather": "मौसम और रोग जोखिम",
+        "weather_sub": "अपने स्थान के लिए लाइव मौसम अपडेट और रोग जोखिम अलर्ट प्राप्त करें।",
+        "enter_city": "अपने शहर का नाम दर्ज करें", "get_weather": "मौसम देखें →",
+        "temperature": "तापमान", "humidity": "नमी",
+        "wind_speed": "हवा की गति", "condition": "स्थिति",
+        "disease_risk": "रोग जोखिम स्तर", "feels_like": "महसूस होता है",
+        "risk_high": "उच्च जोखिम", "risk_medium": "मध्यम जोखिम", "risk_low": "कम जोखिम",
+        "risk_advice": "मौसम सलाह", "city_placeholder": "जैसे पुणे, मुंबई, नाशिक",
+        "current_weather_in": "मौसम की जानकारी",
+        # crop advisor
+        "crop_advisor": "फसल सलाहकार",
+        "crop_advisor_sub": "अपनी मिट्टी, मौसम और स्थानीय परिस्थितियों के आधार पर फसल की सिफारिशें प्राप्त करें।",
+        "soil_type": "मिट्टी का प्रकार", "season": "मौसम", "region": "क्षेत्र",
+        "water_availability": "पानी की उपलब्धता",
+        "get_recommendations": "फसल सिफारिशें प्राप्त करें →",
+        "recommended_crops": "अनुशंसित फसलें", "best_for": "के लिए सर्वोत्तम",
+        "growing_period": "उगाने की अवधि", "water_need": "पानी की जरूरत",
+        "yield_potential": "उपज क्षमता", "pro_tip": "सुझाव",
+        "no_crops": "कोई मिलती फसल नहीं। अलग मिट्टी या मौसम आज़माएं।",
+        # schemes
+        "gov_schemes": "सरकारी योजनाएं",
+        "schemes_sub": "भारतीय किसानों के लिए केंद्र सरकार की योजनाएं।",
+        "search_schemes": "🔍  योजनाएं खोजें…",
+        "all_categories": "सभी श्रेणियां", "apply_now": "आवेदन कैसे करें",
+        "eligibility": "पात्रता", "benefits": "लाभ",
+        "category": "श्रेणी", "visit_website": "आधिकारिक वेबसाइट →",
+        "ministry": "मंत्रालय",
+        # agri hub
+        "agri_hub": "कृषि हब",
+        "agri_hub_sub": "नवीनतम कृषि समाचार, खेती युक्तियाँ, और विशेषज्ञ जानकारी।",
+        "latest_news": "नवीनतम कृषि समाचार", "tip_of_day": "खेती की युक्तियाँ",
+        "read_more": "और पढ़ें →", "no_news": "समाचार लोड नहीं हो सका। कनेक्शन जांचें।",
+        # profile
+        "profile": "प्रोफ़ाइल और सेटिंग्स",
+        "profile_sub": "अपनी खाता जानकारी, सुरक्षा और प्राथमिकताएं प्रबंधित करें।",
+        "account_info": "खाता जानकारी", "security": "सुरक्षा",
+        "change_password": "🔒 पासवर्ड बदलें", "save_changes": "परिवर्तन सहेजें",
+        "current_password": "वर्तमान पासवर्ड", "new_password": "नया पासवर्ड",
+        "confirm_password": "पासवर्ड की पुष्टि करें", "update_password": "पासवर्ड अपडेट करें",
+        "member_since": "सदस्य बने",
+    },
+
+    # ── Marathi ───────────────────────────────────────────────────────────────
+    "mr": {
+        "app_name": "KrushiAI", "tagline": "वनस्पती रोग ओळख",
+        "sign_out": "↩  साइन आउट", "main_menu": "मुख्य मेनू",
+        "language": "भाषा",
+        # nav
+        "nav_dashboard": "डॅशबोर्ड", "nav_scanner": "AI स्कॅनर",
+        "nav_history": "स्कॅन इतिहास", "nav_weather": "हवामान",
+        "nav_news": "कृषी हब", "nav_schemes": "सरकारी योजना",
+        "nav_crops": "पीक सल्लागार", "nav_profile": "प्रोफाइल",
+        # auth
+        "welcome_back": "पुन्हा स्वागत आहे", "create_account": "तुमचे खाते तयार करा",
+        "email": "ईमेल पत्ता", "password": "पासवर्ड", "full_name": "पूर्ण नाव",
+        "sign_in": "साइन इन करा →", "sign_up": "खाते तयार करा →",
+        "no_account": "खाते नाही?", "have_account": "आधीच खाते आहे?",
+        "create_free": "मोफत खाते तयार करा", "sign_in_instead": "साइन इन करा",
+        # dashboard
+        "good_day": "नमस्कार", "plant_health_overview": "वनस्पती आरोग्य सारांश",
+        "dashboard_sub": "तुमच्या शेताच्या तपासणी आणि अलीकडील क्रियाकलापांचा सारांश.",
+        "total_scans": "एकूण स्कॅन", "healthy": "निरोगी",
+        "diseased": "रोगग्रस्त", "health_rate": "आरोग्य दर",
+        "recent_scans": "अलीकडील स्कॅन", "quick_actions": "जलद क्रिया",
+        "no_scans_yet": "अद्याप कोणतेही स्कॅन नाही",
+        "no_scans_sub": "परिणाम पाहण्यासाठी पहिले पान स्कॅन करा.",
+        "new_scan": "नवीन स्कॅन", "new_scan_sub": "AI ने पानाचे निदान करा",
+        "start_scanning": "स्कॅन सुरू करा →", "view_history": "इतिहास पहा",
+        "view_history_sub": "मागील निदान आणि ट्रेंड पहा",
+        "open_history": "इतिहास उघडा →",
+        # scanner
+        "ai_scanner": "AI निदान स्कॅनर",
+        "scanner_sub": "पानाची प्रतिमा अपलोड करा. आमचे CNN मॉडेल रोग अचूकपणे ओळखते.",
+        "image_input": "प्रतिमा इनपुट", "upload_file": "📁  फाइल अपलोड करा", "camera": "📷  कॅमेरा",
+        "analysis_result": "विश्लेषण परिणाम", "analyze_leaf": "🔬  पान विश्लेषण करा",
+        "awaiting_analysis": "विश्लेषणाची प्रतीक्षा",
+        "awaiting_sub": "पानाची प्रतिमा अपलोड करा आणि विश्लेषण करा क्लिक करा.",
+        "drop_image": "येथे पानाची प्रतिमा टाका",
+        "supports": "JPG, JPEG, PNG · कमाल 200MB",
+        "good_lighting": "स्पष्ट फोकस आणि चांगला प्रकाश सुनिश्चित करा",
+        "allow_camera": "कॅमेरा प्रवेश द्या",
+        "camera_hint": "पानावर कॅमेरा ठेवा, स्पष्ट फोकस सुनिश्चित करा",
+        "confidence": "विश्वास", "severity": "तीव्रता",
+        "treatment_plan": "उपचार योजना", "class_probabilities": "वर्ग संभाव्यता",
+        # history
+        "scan_history": "स्कॅन इतिहास",
+        "history_sub": "मागील निदान पहा, रोगाचे ट्रेंड ट्रॅक करा.",
+        "avg_confidence": "सरासरी विश्वास", "no_history": "अद्याप कोणतेही स्कॅन नाही",
+        "no_history_sub": "पहिल्या विश्लेषणानंतर तुमचा स्कॅन इतिहास येथे दिसेल.",
+        "scan_records": "स्कॅन नोंदी", "search_placeholder": "🔍  रोगाच्या नावाने शोधा…",
+        "disease_breakdown": "रोग विश्लेषण", "scans_over_time": "कालांतराने स्कॅन",
+        # weather
+        "weather": "हवामान आणि रोग जोखीम",
+        "weather_sub": "तुमच्या स्थानासाठी थेट हवामान अपडेट आणि रोग जोखीम अलर्ट मिळवा.",
+        "enter_city": "तुमच्या शहराचे नाव प्रविष्ट करा", "get_weather": "हवामान पहा →",
+        "temperature": "तापमान", "humidity": "आर्द्रता",
+        "wind_speed": "वाऱ्याचा वेग", "condition": "स्थिती",
+        "disease_risk": "रोग जोखीम पातळी", "feels_like": "जाणवते",
+        "risk_high": "उच्च जोखीम", "risk_medium": "मध्यम जोखीम", "risk_low": "कमी जोखीम",
+        "risk_advice": "हवामान सल्ला", "city_placeholder": "उदा. पुणे, मुंबई, नाशिक",
+        "current_weather_in": "हवामान माहिती",
+        # crop advisor
+        "crop_advisor": "पीक सल्लागार",
+        "crop_advisor_sub": "तुमची माती, हंगाम आणि स्थानिक परिस्थितींवर आधारित पीक शिफारसी मिळवा.",
+        "soil_type": "मातीचा प्रकार", "season": "हंगाम", "region": "प्रदेश",
+        "water_availability": "पाण्याची उपलब्धता",
+        "get_recommendations": "पीक शिफारसी मिळवा →",
+        "recommended_crops": "शिफारस केलेली पिके", "best_for": "साठी सर्वोत्तम",
+        "growing_period": "वाढीचा कालावधी", "water_need": "पाण्याची गरज",
+        "yield_potential": "उत्पादन क्षमता", "pro_tip": "सल्ला",
+        "no_crops": "जुळणारी पिके सापडली नाहीत. वेगळी माती किंवा हंगाम वापरा.",
+        # schemes
+        "gov_schemes": "सरकारी योजना",
+        "schemes_sub": "शेतकऱ्यांसाठी केंद्र सरकारच्या योजना.",
+        "search_schemes": "🔍  योजना शोधा…",
+        "all_categories": "सर्व श्रेणी", "apply_now": "अर्ज कसा करावा",
+        "eligibility": "पात्रता", "benefits": "फायदे",
+        "category": "श्रेणी", "visit_website": "अधिकृत वेबसाइट →",
+        "ministry": "मंत्रालय",
+        # agri hub
+        "agri_hub": "कृषी हब",
+        "agri_hub_sub": "नवीनतम कृषी बातम्या, शेती टिप्स आणि तज्ञांची माहिती.",
+        "latest_news": "नवीनतम कृषी बातम्या", "tip_of_day": "शेती टिप्स",
+        "read_more": "अधिक वाचा →", "no_news": "बातम्या लोड होऊ शकल्या नाहीत.",
+        # profile
+        "profile": "प्रोफाइल आणि सेटिंग्ज",
+        "profile_sub": "तुमची खाते माहिती, सुरक्षा आणि प्राधान्ये व्यवस्थापित करा.",
+        "account_info": "खाते माहिती", "security": "सुरक्षा",
+        "change_password": "🔒 पासवर्ड बदला", "save_changes": "बदल जतन करा",
+        "current_password": "सध्याचा पासवर्ड", "new_password": "नवीन पासवर्ड",
+        "confirm_password": "पासवर्ड पुष्टी करा", "update_password": "पासवर्ड अपडेट करा",
+        "member_since": "सदस्य झाल्यापासून",
+    },
+}
+
+LANGUAGE_OPTIONS = {
+    "en": "🇬🇧  English",
+    "hi": "🇮🇳  हिंदी",
+    "mr": "🇮🇳  मराठी",
+}
+
+
+def t(key: str, lang: str = "en") -> str:
+    """Return translated string for key in given language. Falls back to English."""
+    return (
+        TRANSLATIONS.get(lang, {}).get(key)
+        or TRANSLATIONS["en"].get(key)
+        or key
+    )
