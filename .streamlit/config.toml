@@ -1,0 +1,19 @@
+[theme]
+base            = "dark"
+primaryColor    = "#10b981"
+backgroundColor = "#04080f"
+secondaryBackgroundColor = "#0d1424"
+textColor       = "#f0f4f8"
+font            = "sans serif"
+
+[server]
+maxUploadSize   = 200      # MB — allows large leaf images
+headless        = true     # required for cloud deployment
+enableCORS      = false
+enableXsrfProtection = true
+
+[runner]
+magicEnabled    = false    # disable magic so st.write() is always explicit
+
+[browser]
+gatherUsageStats = false
