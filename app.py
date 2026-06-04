@@ -461,15 +461,19 @@ def _tab_scanner():
             if st.button(f"🔬  {_t('analyze_leaf')}", key="btn_analyze", use_container_width=True):
                 with st.spinner("Running AI analysis…"):
                     label, conf = predict_disease(img)
-                    import tensorflow as tf, numpy as np
-                    model = tf.keras.models.load_model("models/pomegranate_model.h5")
-                    arr   = np.expand_dims(np.array(img.convert("RGB").resize((224,224)),dtype=np.float32)/255.0, 0)
-                    probs = model.predict(arr, verbose=0)[0]
-                save_scan_result(user_id=st.session_state.user.id,
-                                 disease_name=label, confidence=conf, image_name=img_source)
+                    # Only fetch all-class probs for valid predictions
+                    if label != "Invalid Image":
+                        from utils.predictor import get_all_probs
+                        probs_dict = get_all_probs(img) or {}
+                    else:
+                        probs_dict = {}
+                # Only save valid scans to history
+                if label != "Invalid Image":
+                    save_scan_result(user_id=st.session_state.user.id,
+                                     disease_name=label, confidence=conf, image_name=img_source)
                 st.session_state.last_result = {
                     "label": label, "conf": conf,
-                    "probs": {l: float(p*100) for l, p in zip(MODEL_LABELS, probs)}
+                    "probs": probs_dict,
                 }
                 st.rerun()
 
@@ -490,6 +494,49 @@ def _tab_scanner():
             probs = res.get("probs", {})
             meta  = DISEASE_META.get(label, DISEASE_META["Invalid Image"])
             steps = REMEDIES.get(label, [])
+
+            # ── Show rejection card for invalid images ─────────────────────
+            if label == "Invalid Image":
+                st.markdown("""
+                <div class="result-card" style="border-color:rgba(100,116,139,0.25)">
+                    <div class="rc-header">
+                        <div class="rc-icon-wrap" style="background:rgba(100,116,139,0.12);font-size:1.8rem">❌</div>
+                        <div class="rc-title-block">
+                            <span class="badge-disease" style="background:rgba(100,116,139,0.15);
+                                color:#94a3b8;border-color:rgba(100,116,139,0.3)">
+                                &#9888; NOT A POMEGRANATE LEAF
+                            </span>
+                            <h2 class="rc-name" style="color:#94a3b8">Image Rejected</h2>
+                            <p class="rc-type">Invalid or unrecognised image</p>
+                        </div>
+                    </div>
+                    <div style="margin-top:16px;padding:16px;background:rgba(100,116,139,0.08);
+                         border-radius:10px;border:1px solid rgba(100,116,139,0.15)">
+                        <p style="color:#94a3b8;font-size:0.88rem;margin:0 0 12px;font-weight:600">
+                            Why was this rejected?
+                        </p>
+                        <div class="treat-item">
+                            <span class="treat-dot" style="background:#64748b"></span>
+                            <div><p class="treat-desc" style="margin:0">
+                                The image validation system detected that this image
+                                is likely <strong>not a pomegranate leaf</strong>.
+                                This can happen when the image shows a different object
+                                (car, person, food, building, etc.) or uses the wrong
+                                plant species.
+                            </p></div>
+                        </div>
+                        <div class="treat-item" style="margin-top:10px">
+                            <span class="treat-dot" style="background:#64748b"></span>
+                            <div><p class="treat-desc" style="margin:0">
+                                <strong>Tips for a good scan:</strong> Use natural daylight,
+                                hold the camera 15–20 cm from the leaf, ensure the leaf
+                                fills most of the frame, and avoid blurry or dark images.
+                            </p></div>
+                        </div>
+                    </div>
+                </div>""", unsafe_allow_html=True)
+                # Stop here — don't render the normal result card
+                return
 
             badge = (
                 '<span class="badge-disease">&#9888; DISEASE DETECTED</span>'
