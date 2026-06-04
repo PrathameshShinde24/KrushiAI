@@ -1,10 +1,11 @@
 import streamlit as st
 import base64
 import os
+from html import escape as _esc
 from PIL import Image
 
 from utils.auth         import sign_in, sign_up, change_password, update_profile_name
-from utils.predictor    import predict_disease, LABELS as MODEL_LABELS
+from utils.predictor    import predict_disease
 from utils.database     import save_scan_result, fetch_scan_history, delete_scan, get_user_stats, init_db
 from utils.i18n         import t, LANGUAGE_OPTIONS
 from utils.weather      import get_weather, get_disease_risk
@@ -333,10 +334,9 @@ def _tab_dashboard():
         </div>
     </div>""", unsafe_allow_html=True)
 
-    total    = stats["total"] or 0
-    healthy  = stats["healthy"] or 0
-    diseased = stats["diseased"] or 0
-    avg_conf = stats["avg_confidence"] or 0
+    total       = stats["total"] or 0
+    healthy     = stats["healthy"] or 0
+    diseased    = stats["diseased"] or 0
     health_rate = round((healthy / total * 100)) if total else 0
 
     c1, c2, c3, c4 = st.columns(4, gap="medium")
@@ -460,13 +460,8 @@ def _tab_scanner():
         if img:
             if st.button(f"🔬  {_t('analyze_leaf')}", key="btn_analyze", use_container_width=True):
                 with st.spinner("Running AI analysis…"):
-                    label, conf = predict_disease(img)
-                    # Only fetch all-class probs for valid predictions
-                    if label != "Invalid Image":
-                        from utils.predictor import get_all_probs
-                        probs_dict = get_all_probs(img) or {}
-                    else:
-                        probs_dict = {}
+                    # Single model inference — returns label, conf and all probs at once
+                    label, conf, probs_dict = predict_disease(img)
                 # Only save valid scans to history
                 if label != "Invalid Image":
                     save_scan_result(user_id=st.session_state.user.id,
@@ -735,12 +730,13 @@ def _tab_weather():
         </div>
     </div>""", unsafe_allow_html=True)
 
-    col_in, col_btn = st.columns([4, 1], gap="small")
-    with col_in:
-        city = st.text_input("city", placeholder=_t("city_placeholder"),
-                             label_visibility="collapsed", key="weather_city")
-    with col_btn:
-        fetch = st.button(_t("get_weather"), use_container_width=True, key="btn_weather")
+    with st.form("weather_form", clear_on_submit=False):
+        col_in, col_btn = st.columns([4, 1], gap="small")
+        with col_in:
+            city = st.text_input("city", placeholder=_t("city_placeholder"),
+                                 label_visibility="collapsed", key="weather_city")
+        with col_btn:
+            fetch = st.form_submit_button(_t("get_weather"), use_container_width=True)
 
     if fetch and city:
         with st.spinner("Fetching weather…"):
@@ -841,7 +837,7 @@ def _tab_news():
 
     # News
     st.markdown(f'<p class="section-label">{_t("latest_news")}</p>', unsafe_allow_html=True)
-    with st.spinner(_t("agri_hub_sub")):
+    with st.spinner("Loading latest news…"):
         articles = fetch_agri_news("agriculture India farming pomegranate crop")
 
     if not articles:
@@ -852,21 +848,26 @@ def _tab_news():
         </div>""", unsafe_allow_html=True)
         return
 
-    # 2-column news grid
+    # 2-column news grid — titles/descriptions escaped to prevent XSS
     col1, col2 = st.columns(2, gap="medium")
     for i, a in enumerate(articles):
         col = col1 if i % 2 == 0 else col2
         with col:
-            desc = a["description"][:160] + "…" if len(a["description"]) > 160 else a["description"]
+            safe_title  = _esc(a["title"])
+            safe_source = _esc(a["source"])
+            safe_date   = _esc(a["published"])
+            safe_desc   = _esc(a["description"][:160] + "…" if len(a["description"]) > 160 else a["description"])
+            safe_url    = _esc(a["url"])
             st.markdown(
                 '<div class="news-card">'
                 '<div class="nc-meta">'
-                '<span class="nc-source">' + a["source"] + '</span>'
-                '<span class="nc-date">' + a["published"] + '</span>'
+                '<span class="nc-source">' + safe_source + '</span>'
+                '<span class="nc-date">'   + safe_date   + '</span>'
                 '</div>'
-                '<p class="nc-title">' + a["title"] + '</p>'
-                '<p class="nc-desc">' + desc + '</p>'
-                '<a class="nc-link" href="' + a["url"] + '" target="_blank">' + _t("read_more") + '</a>'
+                '<p class="nc-title">' + safe_title + '</p>'
+                '<p class="nc-desc">'  + safe_desc  + '</p>'
+                '<a class="nc-link" href="' + safe_url + '" target="_blank" rel="noopener noreferrer">'
+                + _t("read_more") + '</a>'
                 '</div>',
                 unsafe_allow_html=True
             )

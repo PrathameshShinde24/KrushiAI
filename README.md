@@ -36,11 +36,16 @@ KrushiAI is a full-stack web application that helps farmers and agronomists iden
 
 ## Features
 
-- **AI Diagnostic Scanner** — CNN model (224×224 input, 5-class output) with per-class confidence scores and visual probability bars
+- **AI Diagnostic Scanner** — 3-stage image validation (color, HSV plant analysis, entropy) before CNN inference; returns per-class confidence bars
 - **Camera Support** — Scan leaves directly using your device's webcam, no upload required
 - **Treatment Plans** — Each diagnosis includes 3 actionable treatment steps tailored to the identified disease
 - **Interactive Dashboard** — Stats overview, recent scans, and quick-action cards
-- **Scan History** — Full scan log with Plotly charts (disease breakdown donut + scans-over-time line graph), search, and delete
+- **Scan History** — Full scan log with Plotly charts (disease breakdown donut + scans-over-time line), search, and delete
+- **Weather & Disease Risk** — Live weather via OpenWeatherMap + High/Medium/Low pomegranate disease risk scoring
+- **Crop Advisor** — Rule-based recommendation engine scoring 13 Indian crops by soil × season × water × region
+- **Government Schemes** — Searchable database of 10 central schemes (PM-KISAN, PMFBY, KCC, PMKSY, and more)
+- **Agri Hub** — Live agricultural news (NewsAPI, cached 1hr) + 15 rotating daily farming tips
+- **Multilingual** — Full UI in English, Hindi (हिंदी), and Marathi (मराठी) via sidebar switcher
 - **Secure Authentication** — PBKDF2-HMAC-SHA256 password hashing, rate limiting (5 attempts → 15-min lockout), XSS prevention
 - **User Profiles** — Update display name, change password, view personal stats
 - **MongoDB Atlas** — Cloud-hosted database with aggregation pipelines and TTL-based auto-expiring rate-limit records
@@ -59,21 +64,26 @@ KrushiAI is a full-stack web application that helps farmers and agronomists iden
 
 ```
 KrushiAI/
-├── app.py                  # Main Streamlit application
-├── requirements.txt        # Python dependencies
-├── .env                    # Environment variables (not committed)
+├── app.py                     # Main Streamlit application (all pages & routing)
+├── requirements.txt           # Python dependencies
+├── .env                       # Environment variables (not committed)
 │
 ├── models/
-│   └── pomegranate_model.h5   # Trained CNN model (5-class)
+│   └── pomegranate_model.h5   # Trained CNN model — 5-class, input (224,224,3)
 │
 ├── utils/
-│   ├── predictor.py        # Model loading & inference
-│   ├── database.py         # MongoDB Atlas layer (CRUD + aggregations)
-│   └── auth.py             # Authentication, rate limiting, password policy
+│   ├── predictor.py           # Model inference + 3-stage image validation
+│   ├── database.py            # MongoDB Atlas — CRUD, aggregation pipeline, TTL indexes
+│   ├── auth.py                # Authentication, rate limiting, password policy, XSS prevention
+│   ├── i18n.py                # Translations — English, Hindi (हिंदी), Marathi (मराठी)
+│   ├── weather.py             # OpenWeatherMap API + disease risk scoring
+│   ├── crop_advisor.py        # Rule-based crop recommendation engine (13 crops)
+│   ├── schemes.py             # Government schemes database (10 central schemes)
+│   └── news.py                # NewsAPI integration + rotating farming tips
 │
 └── assets/
     ├── css/
-    │   └── style.css       # Custom dark navy/emerald design system
+    │   └── style.css          # Custom dark navy/emerald design system
     └── images/
         ├── logo.png
         ├── login_bg.jpg
