@@ -161,59 +161,46 @@ def _validate_post_model(probs: np.ndarray) -> tuple[bool, str]:
 
 # ── Public API ────────────────────────────────────────────────────────────────
 
-def predict_disease(image: Image.Image) -> tuple[str, float]:
+def predict_disease(image: Image.Image) -> tuple[str, float, dict]:
     """
-    Returns (disease_label, confidence_percent).
+    Returns (disease_label, confidence_percent, all_class_probs_dict).
+
+    Runs the model exactly ONCE per call — no redundant inference.
 
     Possible labels:
         'Alternaria', 'Anthracnose', 'Bacterial Blight',
         'Cercospora', 'Healthy', 'Invalid Image'
 
-    confidence is 0.0 for pre-model rejections,
-    otherwise reflects the model's top-class score.
+    all_class_probs_dict is empty {} for invalid/rejected images,
+    otherwise maps each label → probability % (0–100).
+    confidence is 0.0 for pre-model rejections.
     """
     model = _load_model()
     if model is None:
         st.warning("⚠️ Model file not found at `models/pomegranate_model.h5`.")
-        return "Invalid Image", 0.0
+        return "Invalid Image", 0.0, {}
 
     try:
         arr = np.array(image.convert("RGB").resize(IMG_SIZE), dtype=np.float32) / 255.0
 
-        # ── Stage 1 & 2 ───────────────────────────────────────────────────────
-        valid, reason = _validate_pre_model(arr)
+        # ── Stage 1 & 2: pre-model ────────────────────────────────────────────
+        valid, _ = _validate_pre_model(arr)
         if not valid:
-            return "Invalid Image", 0.0
+            return "Invalid Image", 0.0, {}
 
-        # ── CNN inference ──────────────────────────────────────────────────────
+        # ── Single CNN inference ──────────────────────────────────────────────
         probs = model.predict(np.expand_dims(arr, 0), verbose=0)[0]
         conf  = round(float(np.max(probs)) * 100, 2)
         idx   = int(np.argmax(probs))
+        probs_dict = {lbl: round(float(p) * 100, 2) for lbl, p in zip(LABELS, probs)}
 
-        # ── Stage 3 ───────────────────────────────────────────────────────────
+        # ── Stage 3: post-model ───────────────────────────────────────────────
         valid_pred, _ = _validate_post_model(probs)
         if not valid_pred:
-            return "Invalid Image", conf
+            return "Invalid Image", conf, {}
 
-        return LABELS[idx], conf
+        return LABELS[idx], conf, probs_dict
 
     except Exception as e:
         st.error(f"Prediction error: {e}")
-        return "Invalid Image", 0.0
-
-
-def get_all_probs(image: Image.Image) -> dict[str, float] | None:
-    """
-    Returns the full {label: probability_%} dict for the probability bars,
-    or None if model is missing.  Does NOT re-run validation — call
-    predict_disease first to check validity.
-    """
-    model = _load_model()
-    if model is None:
-        return None
-    try:
-        arr   = np.array(image.convert("RGB").resize(IMG_SIZE), dtype=np.float32) / 255.0
-        probs = model.predict(np.expand_dims(arr, 0), verbose=0)[0]
-        return {lbl: round(float(p) * 100, 2) for lbl, p in zip(LABELS, probs)}
-    except Exception:
-        return None
+        return "Invalid Image", 0.0, {}
