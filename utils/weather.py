@@ -9,7 +9,17 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-OWM_KEY  = os.getenv("OPENWEATHER_API_KEY", "")
+def _get_secret(key: str) -> str:
+    val = os.getenv(key, "")
+    if not val:
+        try:
+            import streamlit as st
+            val = st.secrets.get(key, "")
+        except Exception:
+            pass
+    return val
+
+OWM_KEY  = _get_secret("OPENWEATHER_API_KEY")
 BASE_URL = "https://api.openweathermap.org/data/2.5/weather"
 
 

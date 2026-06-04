@@ -49,10 +49,42 @@ MIN_TOP_PROB     = 0.38   # top class must be at least this confident for OOD re
 
 # ── Model loading ─────────────────────────────────────────────────────────────
 
+def _download_model_if_needed():
+    """
+    If the model file is missing (e.g. on a deployment server where the
+    .h5 is not committed), try to download it from MODEL_URL env variable.
+    Supports Google Drive share links and direct URLs.
+    """
+    if os.path.exists(MODEL_PATH):
+        return True
+
+    url = os.getenv("MODEL_URL", "").strip()
+    if not url:
+        return False
+
+    os.makedirs(os.path.dirname(MODEL_PATH), exist_ok=True)
+    st.info("📥 Downloading AI model for the first time… this may take a minute.")
+    try:
+        import requests
+        # Handle Google Drive share links → convert to direct download URL
+        if "drive.google.com" in url and "/file/d/" in url:
+            file_id = url.split("/file/d/")[1].split("/")[0]
+            url = f"https://drive.google.com/uc?export=download&id={file_id}&confirm=t"
+
+        with requests.get(url, stream=True, timeout=300) as r:
+            r.raise_for_status()
+            with open(MODEL_PATH, "wb") as f:
+                for chunk in r.iter_content(chunk_size=8192):
+                    f.write(chunk)
+        return True
+    except Exception as e:
+        st.error(f"Failed to download model: {e}")
+        return False
+
+
 @st.cache_resource(show_spinner="Loading AI model…")
 def _load_model():
-    import os
-    if not os.path.exists(MODEL_PATH):
+    if not _download_model_if_needed():
         return None
     import tensorflow as tf
     return tf.keras.models.load_model(MODEL_PATH)

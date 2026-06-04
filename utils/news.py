@@ -11,7 +11,17 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-NEWS_KEY = os.getenv("NEWS_API_KEY", "")
+def _get_secret(key: str) -> str:
+    val = os.getenv(key, "")
+    if not val:
+        try:
+            import streamlit as st
+            val = st.secrets.get(key, "")
+        except Exception:
+            pass
+    return val
+
+NEWS_KEY = _get_secret("NEWS_API_KEY")
 NEWS_URL = "https://newsapi.org/v2/everything"
 
 # ── Rotating farming tips (shown daily, cycles through list) ─────────────────

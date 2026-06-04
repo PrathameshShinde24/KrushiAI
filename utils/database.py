@@ -17,8 +17,18 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-MONGO_URI = os.getenv("MONGODB_URI")
-MONGO_DB  = os.getenv("MONGODB_DB", "krushiai")
+def _get_secret(key: str, default: str = "") -> str:
+    """Read from .env first, then fall back to st.secrets (Streamlit Cloud)."""
+    val = os.getenv(key, "")
+    if not val:
+        try:
+            val = st.secrets.get(key, default)
+        except Exception:
+            val = default
+    return val
+
+MONGO_URI = _get_secret("MONGODB_URI")
+MONGO_DB  = _get_secret("MONGODB_DB", "krushiai")
 
 
 # ── Connection (cached singleton) ──────────────────────────────────────────────
