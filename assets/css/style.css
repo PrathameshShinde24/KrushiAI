@@ -802,3 +802,211 @@ body, .stApp,
 
 /* Remove p margin in element containers */
 .element-container p { margin: 0 !important; }
+
+/* ================================================================
+   KrushiAI — Design System v2.1
+   Responsive (mobile + desktop) · Visual richness · Micro-interactions
+   ================================================================ */
+
+/* ── Keyframes ─────────────────────────────────────────────────── */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes popIn {
+  0%   { opacity: 0; transform: scale(0.96); }
+  60%  { transform: scale(1.01); }
+  100% { opacity: 1; transform: scale(1); }
+}
+@keyframes shimmer {
+  0%   { background-position: -468px 0; }
+  100% { background-position: 468px 0; }
+}
+@keyframes softPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(16,185,129,0.0); }
+  50%      { box-shadow: 0 0 0 4px rgba(16,185,129,0.10); }
+}
+@keyframes growBar {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+
+/* ── Entrance animations (subtle, key moments only) ────────────── */
+.page-hero    { animation: fadeInUp 0.4s ease both; }
+.result-card  { animation: popIn 0.35s cubic-bezier(0.2,0.8,0.2,1) both; }
+.profile-hero-card { animation: fadeInUp 0.4s ease both; }
+
+/* ── Richer Stat Cards — accent bar + depth + lift ─────────────── */
+.dash-stat-card {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(180deg, var(--surface) 0%, rgba(13,20,36,0.6) 100%);
+  transition: transform 0.2s cubic-bezier(0.2,0.8,0.2,1),
+              border-color 0.2s, box-shadow 0.2s;
+}
+.dash-stat-card::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, var(--green), transparent 80%);
+  opacity: 0; transition: opacity 0.25s;
+}
+.dash-stat-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(16,185,129,0.30);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.35), 0 0 0 1px rgba(16,185,129,0.06);
+}
+.dash-stat-card:hover::before { opacity: 1; }
+.dsc-value { transition: transform 0.2s; }
+.dash-stat-card:hover .dsc-value { transform: scale(1.04); transform-origin: left; }
+
+/* ── Hero title — gradient sheen ───────────────────────────────── */
+.hero-title {
+  background: linear-gradient(180deg, #ffffff 0%, #c5d2e0 100%);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* ── Cards: unified richer hover ───────────────────────────────── */
+.recent-row, .hist-row, .news-card, .qa-card {
+  transition: transform 0.18s cubic-bezier(0.2,0.8,0.2,1),
+              border-color 0.18s, box-shadow 0.18s, background 0.18s;
+}
+.recent-row:hover, .hist-row:hover {
+  transform: translateX(3px);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.22);
+}
+.qa-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(16,185,129,0.10);
+}
+
+/* Animated probability bars on render */
+.prob-fill { transform-origin: left; animation: growBar 0.6s cubic-bezier(0.2,0.8,0.2,1) both; }
+
+/* Badge gentle pulse */
+.badge-healthy { animation: softPulse 2.4s ease-in-out infinite; }
+
+/* ── Primary buttons — lift + glow on hover ────────────────────── */
+[data-testid="stButton"][key^="dash"] button:hover,
+[data-testid="stButton"][key="btn_analyze"] button:hover,
+[data-testid="stButton"][key="btn_login"] button:hover,
+[data-testid="stButton"][key="btn_signup"] button:hover,
+[data-testid="stButton"][key="btn_weather"] button:hover,
+[data-testid="stButton"][key="btn_crops"] button:hover,
+.auth-card .stButton button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(16,185,129,0.35) !important;
+  filter: brightness(1.05);
+}
+.stButton button:active { transform: translateY(0) scale(0.99) !important; }
+
+/* Image preview rounding + subtle frame */
+[data-testid="stImage"] img {
+  border-radius: var(--r-lg) !important;
+  border: 1px solid var(--border) !important;
+}
+
+/* Plotly chart hover lift */
+[data-testid="stPlotlyChart"] { transition: border-color 0.2s, box-shadow 0.2s; }
+[data-testid="stPlotlyChart"]:hover {
+  border-color: rgba(148,163,184,0.18) !important;
+  box-shadow: 0 8px 28px rgba(0,0,0,0.28) !important;
+}
+
+/* Topic / scheme expander hover depth already present — add glow */
+[data-testid="stExpander"]:hover {
+  border-color: rgba(16,185,129,0.22) !important;
+}
+
+/* ================================================================
+   RESPONSIVE — Tablet  (≤ 1024px)
+   ================================================================ */
+@media (max-width: 1024px) {
+  [data-testid="block-container"] { padding: 0 1.25rem 2.5rem !important; }
+  .top-bar   { margin: 0 -1.25rem 0; padding: 0 18px; }
+  .page-hero { margin: 0 -1.25rem 1.5rem; padding-left: 1.25rem; padding-right: 1.25rem; padding-top: 28px; padding-bottom: 22px; }
+  .hero-title { font-size: 24px; }
+  .dsc-value  { font-size: 26px; }
+  .rc-conf-num { font-size: 30px; }
+}
+
+/* ================================================================
+   RESPONSIVE — Mobile  (≤ 640px)
+   ================================================================ */
+@media (max-width: 640px) {
+  /* Tighter page padding */
+  [data-testid="block-container"] { padding: 0 1rem 2rem !important; }
+
+  /* Stack ALL Streamlit columns full-width */
+  [data-testid="stHorizontalBlock"] { flex-wrap: wrap !important; gap: 10px !important; }
+  [data-testid="column"] {
+    flex: 1 1 100% !important;
+    width: 100% !important;
+    min-width: 100% !important;
+    padding: 0 !important;
+  }
+
+  /* Edge-bleed elements follow the 1rem padding */
+  .top-bar   { margin: 0 -1rem 0; padding: 0 14px; height: 52px; }
+  .top-app-name { display: none; }              /* keep just the page name */
+  .top-name     { display: none; }              /* avatar is enough */
+  .page-hero {
+    margin: 0 -1rem 1.25rem;
+    padding: 22px 1rem 18px;
+  }
+  .hero-greeting { font-size: 13px; }
+  .hero-title    { font-size: 21px; line-height: 1.25; }
+  .hero-sub      { font-size: 13px; }
+
+  /* Stat cards — compact */
+  .dash-stat-card { padding: 16px 18px; }
+  .dsc-value      { font-size: 24px; }
+  .dsc-top        { margin-bottom: 8px; }
+
+  /* Result card — stack header, shrink numbers */
+  .result-card { padding: 18px; border-radius: var(--r-lg); }
+  .rc-header   { flex-wrap: wrap; gap: 12px; }
+  .rc-conf     { text-align: left; width: 100%; display: flex; align-items: baseline; gap: 8px; }
+  .rc-conf-num { font-size: 30px; }
+  .rc-conf-lbl { margin-bottom: 4px; }
+  .rc-name     { font-size: 19px; }
+  .prob-label  { width: 90px; font-size: 11px; }
+
+  /* Profile hero — stack vertically, center */
+  .profile-hero-card { flex-direction: column; text-align: center; padding: 24px 18px; gap: 14px; }
+  .phc-info { width: 100%; }
+  .phc-stats {
+    padding-left: 0; border-left: none;
+    border-top: 1px solid var(--border);
+    padding-top: 16px; width: 100%; justify-content: center; gap: 28px;
+  }
+
+  /* Auth card — full width with breathing room */
+  .auth-card { margin: 24px auto; padding: 28px 22px; max-width: 100%; }
+  .auth-title { font-size: 20px; }
+
+  /* Settings / cards — comfortable padding */
+  .settings-card, .help-card, .topic-card, .news-card { padding: 18px; }
+
+  /* Sidebar drawer a touch wider on phones */
+  [data-testid="stSidebar"] { min-width: 82vw !important; max-width: 86vw !important; }
+
+  /* Section spacing */
+  .section-label { font-size: 10px; }
+
+  /* Disable translateX hover jump on touch (feels odd) */
+  .recent-row:hover, .hist-row:hover { transform: none; }
+}
+
+/* ── Reduced-motion accessibility ──────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
