@@ -15,7 +15,7 @@ from pymongo.errors import DuplicateKeyError
 from bson import ObjectId
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(override=True)   # .env always wins locally (over injected secrets)
 
 def _get_secret(key: str, default: str = "") -> str:
     """Read from .env first, then fall back to st.secrets (Streamlit Cloud)."""
