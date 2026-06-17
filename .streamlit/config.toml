@@ -9,8 +9,7 @@ font            = "sans serif"
 [server]
 maxUploadSize   = 200      # MB — allows large leaf images
 headless        = true     # required for cloud deployment
-enableCORS      = false
-enableXsrfProtection = true
+enableXsrfProtection = true   # CSRF protection (keeps CORS at its safe default)
 
 [runner]
 magicEnabled    = false    # disable magic so st.write() is always explicit
