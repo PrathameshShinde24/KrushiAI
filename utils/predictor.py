@@ -37,16 +37,19 @@ IMG_SIZE   = (224, 224)
 
 # ── Tunable validation parameters ────────────────────────────────────────────
 # Stage 1 — colour variation
-MIN_COLOR_STD     = 0.025   # below this the image is too uniform (blank/screenshot)
+MIN_COLOR_STD     = 0.022   # below this the image is too uniform (blank/screenshot)
 
-# Stage 2 — green dominance (leaf must be the subject)
-MIN_CENTER_GREEN  = 0.22    # ≥22 % leaf-green in the central 60 % of the frame, OR
-MIN_OVERALL_GREEN = 0.34    # ≥34 % leaf-green across the whole frame
+# Stage 2 — a colourful subject must occupy the centre of the frame.
+# Pomegranate FRUIT is red/crimson/pink/yellow and LEAVES are green — both are
+# vividly coloured and saturated. Documents, blank frames and grayscale UI
+# screenshots are washed out. We reject only those, so real fruit always passes.
+MIN_CENTER_SAT    = 0.16    # mean colour saturation in the central 60 % of the frame
+MIN_CENTER_RICH   = 0.020   # colour variation (channel std) in the centre
 
 # Stage 3 — prediction-distribution sanity
-MAX_NORM_ENTROPY  = 0.88    # normalised entropy upper bound (0 certain → 1 max uncertain)
-MIN_TOP_PROB      = 0.55    # a real leaf usually peaks above this
-MIN_MARGIN        = 0.18    # top-1 must beat top-2 by this margin when confidence is low
+MAX_NORM_ENTROPY  = 0.92    # normalised entropy upper bound (0 certain → 1 max uncertain)
+MIN_TOP_PROB      = 0.50    # a real fruit/leaf usually peaks above this
+MIN_MARGIN        = 0.15    # top-1 must beat top-2 by this margin when confidence is low
 
 
 # ── Model loading ─────────────────────────────────────────────────────────────
@@ -94,47 +97,31 @@ def _load_model():
 
 # ── Stage 2: HSV plant-colour analysis ───────────────────────────────────────
 
-def _green_analysis(arr: np.ndarray) -> tuple[float, float]:
+def _center_subject_analysis(arr: np.ndarray) -> tuple[float, float]:
     """
-    Return (overall_green_ratio, center_green_ratio).
+    Return (center_saturation, center_richness) for the central 60 % of the frame.
     arr: (H, W, 3) float32 normalised to [0, 1].
 
-    "Green" = leaf-like pixels: hue 60–170°, with enough saturation and value.
-    This deliberately EXCLUDES beige walls, skin, sky, and brown soil — which
-    is what made the old broad "plant" heuristic let non-leaf photos through.
+    A pomegranate FRUIT (red/crimson/pink/yellow) or LEAF (green) is a vividly
+    coloured, saturated subject. Blank frames, documents and grayscale UI
+    screenshots are washed out / low-saturation. Measuring the CENTRE (where the
+    subject sits) avoids being fooled by busy backgrounds.
 
-    A genuine leaf scan is green-dominated, and crucially green in the CENTER
-    of the frame (the leaf is the subject). Background foliage in a snapshot
-    only adds green at the edges, so the center ratio is the stronger signal.
+      • center_saturation — mean HSV saturation in the centre box
+      • center_richness   — colour variation (channel std) in the centre box
     """
     r, g, b = arr[:, :, 0], arr[:, :, 1], arr[:, :, 2]
-
     cmax  = np.maximum(np.maximum(r, g), b)
     delta = cmax - np.minimum(np.minimum(r, g), b)
-    eps   = 1e-8
-    sat   = np.where(cmax > eps, delta / cmax, 0.0)
-    val   = cmax
+    sat   = np.where(cmax > 1e-8, delta / cmax, 0.0)
 
-    hue = np.zeros_like(r)
-    m_r = (cmax == r)
-    m_g = (cmax == g) & ~m_r
-    m_b = ~m_r & ~m_g
-    hue[m_r] = (60.0 * ((g[m_r] - b[m_r]) / (delta[m_r] + eps))) % 360
-    hue[m_g] =  60.0 * ((b[m_g] - r[m_g]) / (delta[m_g] + eps)) + 120.0
-    hue[m_b] =  60.0 * ((r[m_b] - g[m_b]) / (delta[m_b] + eps)) + 240.0
-    hue = hue % 360
-
-    # Leaf green (incl. yellow-green chlorosis), green channel must dominate.
-    green = (hue >= 60) & (hue <= 170) & (sat > 0.18) & (val > 0.12) & (g > r) & (g > b)
-
-    overall = float(green.mean())
-
-    H, W = green.shape
+    H, W = sat.shape
     cy0, cy1 = int(H * 0.20), int(H * 0.80)   # central 60% box
     cx0, cx1 = int(W * 0.20), int(W * 0.80)
-    center = float(green[cy0:cy1, cx0:cx1].mean())
 
-    return overall, center
+    center_sat  = float(sat[cy0:cy1, cx0:cx1].mean())
+    center_rich = float(arr[cy0:cy1, cx0:cx1, :].std(axis=(0, 1)).mean())
+    return center_sat, center_rich
 
 
 # ── Stage 1 + 2: Pre-model validation ────────────────────────────────────────
@@ -142,28 +129,25 @@ def _green_analysis(arr: np.ndarray) -> tuple[float, float]:
 def _validate_pre_model(arr: np.ndarray) -> tuple[bool, str]:
     """
     Returns (is_valid, rejection_reason).
-    Runs before the CNN to reject obvious non-leaf images.
+    Runs before the CNN to reject blank / washed-out / non-photo inputs while
+    always accepting a real pomegranate fruit or leaf photo.
     """
-    # Stage 1 — colour variation (blank / solid / screenshot)
+    # Stage 1 — overall colour variation (blank / solid / flat screenshot)
     channel_std = float(arr.std(axis=(0, 1)).mean())
     if channel_std < MIN_COLOR_STD:
         return False, (
-            "The image appears to be blank, a solid colour, or a screenshot. "
-            "Please upload a clear photo of a pomegranate leaf."
+            "The image appears to be blank, a solid colour, or a flat screenshot. "
+            "Please upload a clear close-up photo of a pomegranate."
         )
 
-    # Stage 2 — green dominance, center-weighted
-    overall_green, center_green = _green_analysis(arr)
-
-    # Accept only if the leaf is clearly present:
-    #   • the center of the frame is green (leaf is the subject), OR
-    #   • green fills a large share of the whole frame (leaf fills it).
-    # Background foliage in a snapshot fails both (green only at the edges).
-    if center_green < MIN_CENTER_GREEN and overall_green < MIN_OVERALL_GREEN:
+    # Stage 2 — a colourful, saturated subject must occupy the centre.
+    # Accepts red/yellow fruit AND green leaves; rejects grayscale docs / blank UI.
+    center_sat, center_rich = _center_subject_analysis(arr)
+    if center_sat < MIN_CENTER_SAT and center_rich < MIN_CENTER_RICH:
         return False, (
-            f"This doesn't look like a pomegranate leaf "
-            f"(leaf-green in center: {center_green:.0%}, overall: {overall_green:.0%}). "
-            f"Fill the frame with a single leaf in good light and try again."
+            f"This doesn't look like a pomegranate photo "
+            f"(centre colour: {center_sat:.0%}). "
+            f"Fill the frame with the fruit in good light and try again."
         )
 
     return True, "OK"
