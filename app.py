@@ -499,7 +499,7 @@ def _tab_scanner():
                         <div class="rc-title-block">
                             <span class="badge-disease" style="background:rgba(100,116,139,0.15);
                                 color:#94a3b8;border-color:rgba(100,116,139,0.3)">
-                                &#9888; NOT A POMEGRANATE LEAF
+                                &#9888; NOT A POMEGRANATE
                             </span>
                             <h2 class="rc-name" style="color:#94a3b8">Image Rejected</h2>
                             <p class="rc-type">Invalid or unrecognised image</p>
@@ -514,17 +514,16 @@ def _tab_scanner():
                             <span class="treat-dot" style="background:#64748b"></span>
                             <div><p class="treat-desc" style="margin:0">
                                 The image validation system detected that this image
-                                is likely <strong>not a pomegranate leaf</strong>.
+                                is likely <strong>not a pomegranate</strong>.
                                 This can happen when the image shows a different object
-                                (car, person, food, building, etc.) or uses the wrong
-                                plant species.
+                                (car, person, food, building, etc.) or a different fruit.
                             </p></div>
                         </div>
                         <div class="treat-item" style="margin-top:10px">
                             <span class="treat-dot" style="background:#64748b"></span>
                             <div><p class="treat-desc" style="margin:0">
                                 <strong>Tips for a good scan:</strong> Use natural daylight,
-                                hold the camera 15–20 cm from the leaf, ensure the leaf
+                                hold the camera 15–20 cm from the fruit, ensure the fruit
                                 fills most of the frame, and avoid blurry or dark images.
                             </p></div>
                         </div>
