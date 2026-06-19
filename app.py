@@ -91,7 +91,7 @@ def _nav_btn(icon: str, label_key: str, key: str, page: str):
     label = _t(label_key)
     if st.session_state.page == page:
         st.markdown('<span class="nav-hint"></span>', unsafe_allow_html=True)
-    if st.button(f"{icon}  {label}", key=key, use_container_width=True):
+    if st.button(f"{icon}  {label}", key=key, width="stretch"):
         st.session_state.page = page
         st.rerun()
 
@@ -169,7 +169,7 @@ def _page_login():
                 st.markdown('<span class="forgot-link">Forgot?</span>', unsafe_allow_html=True)
             pwd = st.text_input("p1", type="password", placeholder="••••••••", key="li_pwd", label_visibility="collapsed")
 
-            if st.button(_t("sign_in"), use_container_width=True, key="btn_login"):
+            if st.button(_t("sign_in"), width="stretch", key="btn_login"):
                 if not email or not pwd:
                     st.warning("Please fill in both fields.")
                 else:
@@ -182,7 +182,7 @@ def _page_login():
                         st.rerun()
 
             st.markdown(f'<p class="auth-switch">{_t("no_account")}</p>', unsafe_allow_html=True)
-            if st.button(_t("create_free"), use_container_width=True, key="btn_go_signup"):
+            if st.button(_t("create_free"), width="stretch", key="btn_go_signup"):
                 st.session_state.auth_tab = "signup"
                 st.rerun()
 
@@ -195,7 +195,7 @@ def _page_login():
             st.markdown(f'<label class="field-label">{_t("password")}</label>', unsafe_allow_html=True)
             pwd   = st.text_input("p2", type="password", placeholder="Min. 8 characters", key="su_pwd", label_visibility="collapsed")
 
-            if st.button(_t("sign_up"), use_container_width=True, key="btn_signup"):
+            if st.button(_t("sign_up"), width="stretch", key="btn_signup"):
                 if not name or not email or not pwd:
                     st.warning("Please fill in all fields.")
                 else:
@@ -207,7 +207,7 @@ def _page_login():
                         st.rerun()
 
             st.markdown(f'<p class="auth-switch">{_t("have_account")}</p>', unsafe_allow_html=True)
-            if st.button(_t("sign_in_instead"), use_container_width=True, key="btn_go_login"):
+            if st.button(_t("sign_in_instead"), width="stretch", key="btn_go_login"):
                 st.session_state.auth_tab = "login"
                 st.rerun()
 
@@ -280,7 +280,7 @@ def _page_app():
         </div>""", unsafe_allow_html=True)
 
         st.markdown('<div class="logout-wrap">', unsafe_allow_html=True)
-        if st.button(_t("sign_out"), key="btn_logout", use_container_width=True):
+        if st.button(_t("sign_out"), key="btn_logout", width="stretch"):
             for k in ["user", "last_result", "page", "auth_tab", "weather_data"]:
                 st.session_state.pop(k, None)
             st.rerun()
@@ -394,7 +394,7 @@ def _tab_dashboard():
                 <p class="qa-sub">{_t("new_scan_sub")}</p>
             </div>
         </div>""", unsafe_allow_html=True)
-        if st.button(_t("start_scanning"), key="dash_scan", use_container_width=True):
+        if st.button(_t("start_scanning"), key="dash_scan", width="stretch"):
             st.session_state.last_result = None
             st.session_state.page = "scanner"
             st.rerun()
@@ -407,7 +407,7 @@ def _tab_dashboard():
                 <p class="qa-sub">{_t("view_history_sub")}</p>
             </div>
         </div>""", unsafe_allow_html=True)
-        if st.button(_t("open_history"), key="dash_hist", use_container_width=True):
+        if st.button(_t("open_history"), key="dash_hist", width="stretch"):
             st.session_state.page = "history"
             st.rerun()
 
@@ -434,7 +434,7 @@ def _tab_scanner():
             uploaded = st.file_uploader("leaf", type=["jpg","jpeg","png"], label_visibility="collapsed")
             if uploaded:
                 img = Image.open(uploaded); img_source = uploaded.name
-                st.image(img, use_container_width=True)
+                st.image(img, width="stretch")
             else:
                 st.markdown(f"""
                 <div class="upload-zone">
@@ -448,7 +448,7 @@ def _tab_scanner():
             shot = st.camera_input("capture", label_visibility="collapsed")
             if shot:
                 img = Image.open(shot); img_source = "camera"
-                st.image(img, use_container_width=True)
+                st.image(img, width="stretch")
             else:
                 st.markdown(f"""
                 <div class="upload-zone">
@@ -458,7 +458,7 @@ def _tab_scanner():
                 </div>""", unsafe_allow_html=True)
 
         if img:
-            if st.button(f"🔬  {_t('analyze_leaf')}", key="btn_analyze", use_container_width=True):
+            if st.button(f"🔬  {_t('analyze_leaf')}", key="btn_analyze", width="stretch"):
                 with st.spinner("Running AI analysis…"):
                     # Single model inference — returns label, conf and all probs at once
                     label, conf, probs_dict = predict_disease(img)
@@ -624,7 +624,7 @@ def _render_charts(history: list):
             annotations=[dict(text=f"<b>{len(history)}</b><br>total",x=0.5,y=0.5,
                               showarrow=False,font=dict(family=FONT,size=15,color=TEXT))],
         )
-        st.plotly_chart(fig, use_container_width=True, config={"displayModeBar":False})
+        st.plotly_chart(fig, width="stretch", config={"displayModeBar":False})
 
     with cr:
         st.markdown(f'<p class="section-label">{_t("scans_over_time")}</p>', unsafe_allow_html=True)
@@ -647,7 +647,7 @@ def _render_charts(history: list):
                 xaxis=dict(showgrid=False,zeroline=False,tickfont=dict(family=FONT,size=10,color=TEXT),tickangle=-30),
                 yaxis=dict(showgrid=True,gridcolor=GRID,zeroline=False,tickfont=dict(family=FONT,size=10,color=TEXT),dtick=1),
             )
-            st.plotly_chart(fig2, use_container_width=True, config={"displayModeBar":False})
+            st.plotly_chart(fig2, width="stretch", config={"displayModeBar":False})
 
 def _tab_history():
     st.markdown(f"""
@@ -736,7 +736,7 @@ def _tab_weather():
             city = st.text_input("city", placeholder=_t("city_placeholder"),
                                  label_visibility="collapsed", key="weather_city")
         with col_btn:
-            fetch = st.form_submit_button(_t("get_weather"), use_container_width=True)
+            fetch = st.form_submit_button(_t("get_weather"), width="stretch")
 
     if fetch and city:
         with st.spinner("Fetching weather…"):
@@ -949,7 +949,7 @@ def _tab_crops():
         season = st.selectbox(_t("season"),             SEASON_OPTIONS, key="ca_season")
         region = st.selectbox(_t("region"),             REGION_OPTIONS, key="ca_region")
         water  = st.selectbox(_t("water_availability"), WATER_OPTIONS,  key="ca_water")
-        run    = st.button(_t("get_recommendations"), use_container_width=True, key="btn_crops")
+        run    = st.button(_t("get_recommendations"), width="stretch", key="btn_crops")
         st.markdown('</div>', unsafe_allow_html=True)
 
         # Auto-run on first load
@@ -1048,7 +1048,7 @@ def _tab_profile():
         new_name = st.text_input(_t("full_name"), value=name, key="p_name")
         st.text_input("Email", value=email, disabled=True, key="p_email")
         st.text_input(_t("member_since"), value=joined, disabled=True, key="p_joined")
-        if st.button(_t("save_changes"), key="btn_update_name", use_container_width=True):
+        if st.button(_t("save_changes"), key="btn_update_name", width="stretch"):
             if update_profile_name(user.id, new_name):
                 user.name = new_name.strip()
                 st.session_state.user = user
@@ -1063,7 +1063,7 @@ def _tab_profile():
             old  = st.text_input(_t("current_password"), type="password", key="cp_old")
             new1 = st.text_input(_t("new_password"),     type="password", key="cp_new")
             new2 = st.text_input(_t("confirm_password"), type="password", key="cp_new2")
-            if st.button(_t("update_password"), key="btn_save_pwd", use_container_width=True):
+            if st.button(_t("update_password"), key="btn_save_pwd", width="stretch"):
                 if not old or not new1:
                     st.error("Please fill in all fields.")
                 elif new1 != new2:

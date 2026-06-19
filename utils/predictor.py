@@ -26,6 +26,7 @@ Why NOT a fixed confidence threshold
   that slip through, regardless of what the top confidence is.
 """
 
+import os
 import numpy as np
 from PIL import Image
 import streamlit as st
