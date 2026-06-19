@@ -51,6 +51,30 @@ MAX_NORM_ENTROPY  = 0.92    # normalised entropy upper bound (0 certain → 1 ma
 MIN_TOP_PROB      = 0.50    # a real fruit/leaf usually peaks above this
 MIN_MARGIN        = 0.15    # top-1 must beat top-2 by this margin when confidence is low
 
+# ── Stage 0 — MobileNet "is this a fruit?" gate ──────────────────────────────
+# A human face and a red pomegranate look identical to a colour check, so we
+# use MobileNetV2 (pre-trained on ImageNet) to reject inputs that aren't a
+# fruit/produce object at all (people, suits, buildings, etc.).
+# We sum the probability mass over ImageNet's fruit/produce classes; a real
+# pomegranate scores high, a face scores ~0.
+GATE_MIN_FRUIT_SCORE = 0.012   # lenient: real fruit passes easily, faces are ~0
+_FRUIT_IMAGENET_IDS = (
+    948,  # Granny Smith (apple)
+    949,  # strawberry
+    950,  # orange
+    951,  # lemon
+    952,  # fig
+    953,  # pineapple
+    954,  # banana
+    955,  # jackfruit
+    956,  # custard apple
+    957,  # pomegranate
+    943,  # cucumber
+    945,  # bell pepper
+    947,  # mushroom (round produce, helps borderline)
+    987,  # corn
+)
+
 
 # ── Model loading ─────────────────────────────────────────────────────────────
 
@@ -93,6 +117,33 @@ def _load_model():
         return None
     import tensorflow as tf
     return tf.keras.models.load_model(MODEL_PATH)
+
+
+@st.cache_resource(show_spinner="Preparing image validator…")
+def _gate_model():
+    """MobileNetV2 (ImageNet) used only as an 'is this a fruit?' gate."""
+    try:
+        from tensorflow.keras.applications import MobileNetV2
+        return MobileNetV2(weights="imagenet")
+    except Exception:
+        return None   # gate unavailable → validation falls back to colour check
+
+
+def _fruit_gate_score(arr01: np.ndarray):
+    """
+    Return summed ImageNet probability over fruit/produce classes, or None if
+    the gate model is unavailable. arr01: (224,224,3) float in [0,1].
+    """
+    gate = _gate_model()
+    if gate is None:
+        return None
+    try:
+        from tensorflow.keras.applications.mobilenet_v2 import preprocess_input
+        x = preprocess_input((arr01 * 255.0).astype(np.float32).copy())
+        preds = gate.predict(np.expand_dims(x, 0), verbose=0)[0]
+        return float(sum(preds[i] for i in _FRUIT_IMAGENET_IDS))
+    except Exception:
+        return None
 
 
 # ── Stage 2: HSV plant-colour analysis ───────────────────────────────────────
@@ -148,6 +199,16 @@ def _validate_pre_model(arr: np.ndarray) -> tuple[bool, str]:
             f"This doesn't look like a pomegranate photo "
             f"(centre colour: {center_sat:.0%}). "
             f"Fill the frame with the fruit in good light and try again."
+        )
+
+    # Stage 0 (gate) — MobileNet: is this a fruit/produce object at all?
+    # This is what separates a red pomegranate from a human face — colour can't.
+    fruit_score = _fruit_gate_score(arr)
+    if fruit_score is not None and fruit_score < GATE_MIN_FRUIT_SCORE:
+        return False, (
+            f"This doesn't appear to be a pomegranate "
+            f"(fruit-likeness: {fruit_score:.1%}). "
+            f"Please upload a clear close-up of a pomegranate fruit."
         )
 
     return True, "OK"
