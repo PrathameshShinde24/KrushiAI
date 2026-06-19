@@ -36,16 +36,17 @@ LABELS     = ["Alternaria", "Anthracnose", "Bacterial Blight", "Cercospora", "He
 IMG_SIZE   = (224, 224)
 
 # ── Tunable validation parameters ────────────────────────────────────────────
-# Stage 1
-MIN_COLOR_STD   = 0.025   # images with lower std are "too uniform"
+# Stage 1 — colour variation
+MIN_COLOR_STD     = 0.025   # below this the image is too uniform (blank/screenshot)
 
-# Stage 2
-MIN_PLANT_RATIO = 0.18    # need ≥18 % plant-coloured pixels
+# Stage 2 — green dominance (leaf must be the subject)
+MIN_CENTER_GREEN  = 0.22    # ≥22 % leaf-green in the central 60 % of the frame, OR
+MIN_OVERALL_GREEN = 0.34    # ≥34 % leaf-green across the whole frame
 
-# Stage 3
-MAX_NORM_ENTROPY = 0.90   # normalised entropy upper bound  (0=certain, 1=max uncertain)
-MIN_TOP_PROB     = 0.38   # top class must be at least this confident for OOD rejection
-                          # (only applied when entropy is also high)
+# Stage 3 — prediction-distribution sanity
+MAX_NORM_ENTROPY  = 0.88    # normalised entropy upper bound (0 certain → 1 max uncertain)
+MIN_TOP_PROB      = 0.55    # a real leaf usually peaks above this
+MIN_MARGIN        = 0.18    # top-1 must beat top-2 by this margin when confidence is low
 
 
 # ── Model loading ─────────────────────────────────────────────────────────────
@@ -93,47 +94,47 @@ def _load_model():
 
 # ── Stage 2: HSV plant-colour analysis ───────────────────────────────────────
 
-def _plant_pixel_ratio(arr: np.ndarray) -> float:
+def _green_analysis(arr: np.ndarray) -> tuple[float, float]:
     """
-    Return the fraction of pixels that fall in plant-like HSV colour ranges.
+    Return (overall_green_ratio, center_green_ratio).
     arr: (H, W, 3) float32 normalised to [0, 1].
 
-    Covered ranges:
-      • Fresh green (healthy leaf)         hue  55–165°, sat >0.12, val >0.07
-      • Yellow-green (mild chlorosis)      hue  40– 75°, sat >0.15, val >0.15
-      • Yellow-brown (disease lesions)     hue  15– 55°, sat >0.15, val 0.10–0.80
-      • Dark necrotic/brown tissue         low sat, dark val, reddish tone
+    "Green" = leaf-like pixels: hue 60–170°, with enough saturation and value.
+    This deliberately EXCLUDES beige walls, skin, sky, and brown soil — which
+    is what made the old broad "plant" heuristic let non-leaf photos through.
+
+    A genuine leaf scan is green-dominated, and crucially green in the CENTER
+    of the frame (the leaf is the subject). Background foliage in a snapshot
+    only adds green at the edges, so the center ratio is the stronger signal.
     """
-    r = arr[:, :, 0]
-    g = arr[:, :, 1]
-    b = arr[:, :, 2]
+    r, g, b = arr[:, :, 0], arr[:, :, 1], arr[:, :, 2]
 
     cmax  = np.maximum(np.maximum(r, g), b)
     delta = cmax - np.minimum(np.minimum(r, g), b)
     eps   = 1e-8
+    sat   = np.where(cmax > eps, delta / cmax, 0.0)
+    val   = cmax
 
-    # Saturation and Value
-    sat = np.where(cmax > eps, delta / cmax, 0.0)
-    val = cmax
-
-    # Hue (0–360 °)
-    hue   = np.zeros_like(r)
-    m_r   = (cmax == r)
-    m_g   = (cmax == g) & ~m_r
-    m_b   = ~m_r & ~m_g
-
+    hue = np.zeros_like(r)
+    m_r = (cmax == r)
+    m_g = (cmax == g) & ~m_r
+    m_b = ~m_r & ~m_g
     hue[m_r] = (60.0 * ((g[m_r] - b[m_r]) / (delta[m_r] + eps))) % 360
     hue[m_g] =  60.0 * ((b[m_g] - r[m_g]) / (delta[m_g] + eps)) + 120.0
     hue[m_b] =  60.0 * ((r[m_b] - g[m_b]) / (delta[m_b] + eps)) + 240.0
-    hue      =  hue % 360
+    hue = hue % 360
 
-    fresh_green   = (hue >= 55)  & (hue <= 165) & (sat > 0.12) & (val > 0.07)
-    yellow_green  = (hue >= 40)  & (hue <= 75)  & (sat > 0.15) & (val > 0.15)
-    yellow_brown  = (hue >= 15)  & (hue <= 55)  & (sat > 0.15) & (val > 0.10) & (val < 0.80)
-    dark_necrotic = (sat < 0.40) & (val > 0.05) & (val < 0.55) & (r >= g * 0.80) & (g >= b * 1.02)
+    # Leaf green (incl. yellow-green chlorosis), green channel must dominate.
+    green = (hue >= 60) & (hue <= 170) & (sat > 0.18) & (val > 0.12) & (g > r) & (g > b)
 
-    plant_px = np.sum(fresh_green | yellow_green | yellow_brown | dark_necrotic)
-    return float(plant_px) / (arr.shape[0] * arr.shape[1])
+    overall = float(green.mean())
+
+    H, W = green.shape
+    cy0, cy1 = int(H * 0.20), int(H * 0.80)   # central 60% box
+    cx0, cx1 = int(W * 0.20), int(W * 0.80)
+    center = float(green[cy0:cy1, cx0:cx1].mean())
+
+    return overall, center
 
 
 # ── Stage 1 + 2: Pre-model validation ────────────────────────────────────────
@@ -141,9 +142,9 @@ def _plant_pixel_ratio(arr: np.ndarray) -> float:
 def _validate_pre_model(arr: np.ndarray) -> tuple[bool, str]:
     """
     Returns (is_valid, rejection_reason).
-    Called before the CNN to avoid wasting inference on obvious non-leaf images.
+    Runs before the CNN to reject obvious non-leaf images.
     """
-    # Stage 1 — color variation
+    # Stage 1 — colour variation (blank / solid / screenshot)
     channel_std = float(arr.std(axis=(0, 1)).mean())
     if channel_std < MIN_COLOR_STD:
         return False, (
@@ -151,43 +152,48 @@ def _validate_pre_model(arr: np.ndarray) -> tuple[bool, str]:
             "Please upload a clear photo of a pomegranate leaf."
         )
 
-    # Stage 2 — HSV plant ratio
-    ratio = _plant_pixel_ratio(arr)
-    if ratio < MIN_PLANT_RATIO:
+    # Stage 2 — green dominance, center-weighted
+    overall_green, center_green = _green_analysis(arr)
+
+    # Accept only if the leaf is clearly present:
+    #   • the center of the frame is green (leaf is the subject), OR
+    #   • green fills a large share of the whole frame (leaf fills it).
+    # Background foliage in a snapshot fails both (green only at the edges).
+    if center_green < MIN_CENTER_GREEN and overall_green < MIN_OVERALL_GREEN:
         return False, (
-            f"The image does not appear to contain a leaf "
-            f"(plant-like content detected: {ratio:.0%}). "
-            f"Please upload a pomegranate leaf image with good lighting."
+            f"This doesn't look like a pomegranate leaf "
+            f"(leaf-green in center: {center_green:.0%}, overall: {overall_green:.0%}). "
+            f"Fill the frame with a single leaf in good light and try again."
         )
 
     return True, "OK"
 
 
-# ── Stage 3: Post-model entropy check ────────────────────────────────────────
+# ── Stage 3: Post-model distribution check ───────────────────────────────────
 
 def _validate_post_model(probs: np.ndarray) -> tuple[bool, str]:
     """
-    Examines the shape of the full probability distribution.
+    Examines the probability distribution shape.
 
-    A real pomegranate leaf produces a peaked distribution
-    (one or two dominant classes) even at moderate confidence.
-
-    A non-leaf image that somehow passed Stage 1/2 often produces
-    a nearly flat distribution — high entropy — where the model
-    can't commit to any class.  We only reject when BOTH entropy
-    is very high AND the top probability is low, so we never
-    penalise genuine leaves with moderate confidence.
+    Out-of-distribution images that slip past the colour gate often produce
+    either a flat (high-entropy) distribution OR two near-tied top classes —
+    the model can't commit. A genuine leaf yields a clearly peaked top class
+    with a comfortable margin over the runner-up.
     """
     entropy      = float(-np.sum(probs * np.log(probs + 1e-8)))
-    max_entropy  = float(np.log(len(probs)))          # log(5) ≈ 1.609
-    norm_entropy = entropy / max_entropy               # 0 → certain, 1 → max uncertain
+    norm_entropy = entropy / float(np.log(len(probs)))   # 0 certain → 1 max uncertain
     top_prob     = float(np.max(probs))
 
-    if norm_entropy > MAX_NORM_ENTROPY and top_prob < MIN_TOP_PROB:
+    ordered = np.sort(probs)[::-1]
+    margin  = float(ordered[0] - ordered[1])             # top-1 minus top-2
+
+    # Reject if the model is broadly unsure, or top-1 and top-2 are near-tied.
+    if (norm_entropy > MAX_NORM_ENTROPY and top_prob < MIN_TOP_PROB) or \
+       (top_prob < MIN_TOP_PROB and margin < MIN_MARGIN):
         return False, (
-            f"The model cannot confidently identify this as a pomegranate leaf "
-            f"(top confidence: {top_prob*100:.1f}%, uncertainty: {norm_entropy:.0%}). "
-            f"Please try a clearer, well-lit leaf image."
+            f"The model could not confidently identify this as a pomegranate leaf "
+            f"(top confidence {top_prob*100:.0f}%, margin {margin*100:.0f}%). "
+            f"Please try a clearer, well-lit close-up of a single leaf."
         )
     return True, "OK"
 
