@@ -34,3 +34,7 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Design system export (reference material, kept locally)
+*.zip
+design_export/
