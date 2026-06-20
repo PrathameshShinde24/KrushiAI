@@ -113,7 +113,9 @@ def _center_subject_analysis(arr: np.ndarray) -> tuple[float, float]:
     r, g, b = arr[:, :, 0], arr[:, :, 1], arr[:, :, 2]
     cmax  = np.maximum(np.maximum(r, g), b)
     delta = cmax - np.minimum(np.minimum(r, g), b)
-    sat   = np.where(cmax > 1e-8, delta / cmax, 0.0)
+    # Divide only where cmax > 0 to avoid a divide-by-zero RuntimeWarning
+    # (np.where would still evaluate delta/cmax for every pixel first).
+    sat   = np.divide(delta, cmax, out=np.zeros_like(cmax), where=cmax > 1e-8)
 
     H, W = sat.shape
     cy0, cy1 = int(H * 0.20), int(H * 0.80)   # central 60% box

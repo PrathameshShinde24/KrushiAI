@@ -7,9 +7,10 @@ textColor       = "#f0f4f8"
 font            = "sans serif"
 
 [server]
-maxUploadSize   = 200      # MB — allows large leaf images
+maxUploadSize   = 200      # MB — allows large fruit images
 headless        = true     # required for cloud deployment
 enableXsrfProtection = true   # CSRF protection (keeps CORS at its safe default)
+fileWatcherType = "poll"   # avoids a Windows multi-drive watcher crash; keeps auto-reload
 
 [runner]
 magicEnabled    = false    # disable magic so st.write() is always explicit
