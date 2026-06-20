@@ -47,33 +47,9 @@ MIN_CENTER_SAT    = 0.16    # mean colour saturation in the central 60 % of the 
 MIN_CENTER_RICH   = 0.020   # colour variation (channel std) in the centre
 
 # Stage 3 — prediction-distribution sanity
-MAX_NORM_ENTROPY  = 0.92    # normalised entropy upper bound (0 certain → 1 max uncertain)
-MIN_TOP_PROB      = 0.50    # a real fruit/leaf usually peaks above this
-MIN_MARGIN        = 0.15    # top-1 must beat top-2 by this margin when confidence is low
-
-# ── Stage 0 — MobileNet "is this a fruit?" gate ──────────────────────────────
-# A human face and a red pomegranate look identical to a colour check, so we
-# use MobileNetV2 (pre-trained on ImageNet) to reject inputs that aren't a
-# fruit/produce object at all (people, suits, buildings, etc.).
-# We sum the probability mass over ImageNet's fruit/produce classes; a real
-# pomegranate scores high, a face scores ~0.
-GATE_MIN_FRUIT_SCORE = 0.012   # lenient: real fruit passes easily, faces are ~0
-_FRUIT_IMAGENET_IDS = (
-    948,  # Granny Smith (apple)
-    949,  # strawberry
-    950,  # orange
-    951,  # lemon
-    952,  # fig
-    953,  # pineapple
-    954,  # banana
-    955,  # jackfruit
-    956,  # custard apple
-    957,  # pomegranate
-    943,  # cucumber
-    945,  # bell pepper
-    947,  # mushroom (round produce, helps borderline)
-    987,  # corn
-)
+# Stage 3 — only reject a near-uniform (totally undecided) distribution.
+# Kept deliberately lenient so a real — even ambiguous — fruit always passes.
+MAX_NORM_ENTROPY  = 0.985   # reject only if the model is essentially guessing
 
 
 # ── Model loading ─────────────────────────────────────────────────────────────
@@ -117,33 +93,6 @@ def _load_model():
         return None
     import tensorflow as tf
     return tf.keras.models.load_model(MODEL_PATH)
-
-
-@st.cache_resource(show_spinner="Preparing image validator…")
-def _gate_model():
-    """MobileNetV2 (ImageNet) used only as an 'is this a fruit?' gate."""
-    try:
-        from tensorflow.keras.applications import MobileNetV2
-        return MobileNetV2(weights="imagenet")
-    except Exception:
-        return None   # gate unavailable → validation falls back to colour check
-
-
-def _fruit_gate_score(arr01: np.ndarray):
-    """
-    Return summed ImageNet probability over fruit/produce classes, or None if
-    the gate model is unavailable. arr01: (224,224,3) float in [0,1].
-    """
-    gate = _gate_model()
-    if gate is None:
-        return None
-    try:
-        from tensorflow.keras.applications.mobilenet_v2 import preprocess_input
-        x = preprocess_input((arr01 * 255.0).astype(np.float32).copy())
-        preds = gate.predict(np.expand_dims(x, 0), verbose=0)[0]
-        return float(sum(preds[i] for i in _FRUIT_IMAGENET_IDS))
-    except Exception:
-        return None
 
 
 # ── Stage 2: HSV plant-colour analysis ───────────────────────────────────────
@@ -192,23 +141,14 @@ def _validate_pre_model(arr: np.ndarray) -> tuple[bool, str]:
         )
 
     # Stage 2 — a colourful, saturated subject must occupy the centre.
-    # Accepts red/yellow fruit AND green leaves; rejects grayscale docs / blank UI.
+    # Accepts red/yellow fruit AND green leaves; rejects only grayscale docs /
+    # blank UI. Deliberately lenient: a real pomegranate must never be rejected.
     center_sat, center_rich = _center_subject_analysis(arr)
     if center_sat < MIN_CENTER_SAT and center_rich < MIN_CENTER_RICH:
         return False, (
             f"This doesn't look like a pomegranate photo "
             f"(centre colour: {center_sat:.0%}). "
             f"Fill the frame with the fruit in good light and try again."
-        )
-
-    # Stage 0 (gate) — MobileNet: is this a fruit/produce object at all?
-    # This is what separates a red pomegranate from a human face — colour can't.
-    fruit_score = _fruit_gate_score(arr)
-    if fruit_score is not None and fruit_score < GATE_MIN_FRUIT_SCORE:
-        return False, (
-            f"This doesn't appear to be a pomegranate "
-            f"(fruit-likeness: {fruit_score:.1%}). "
-            f"Please upload a clear close-up of a pomegranate fruit."
         )
 
     return True, "OK"
@@ -218,28 +158,15 @@ def _validate_pre_model(arr: np.ndarray) -> tuple[bool, str]:
 
 def _validate_post_model(probs: np.ndarray) -> tuple[bool, str]:
     """
-    Examines the probability distribution shape.
-
-    Out-of-distribution images that slip past the colour gate often produce
-    either a flat (high-entropy) distribution OR two near-tied top classes —
-    the model can't commit. A genuine leaf yields a clearly peaked top class
-    with a comfortable margin over the runner-up.
+    Lenient sanity check: reject only when the model is essentially guessing
+    (a near-uniform distribution across all classes). A real pomegranate —
+    even an ambiguous diseased one — produces a clearly peaked class and passes.
     """
     entropy      = float(-np.sum(probs * np.log(probs + 1e-8)))
     norm_entropy = entropy / float(np.log(len(probs)))   # 0 certain → 1 max uncertain
-    top_prob     = float(np.max(probs))
 
-    ordered = np.sort(probs)[::-1]
-    margin  = float(ordered[0] - ordered[1])             # top-1 minus top-2
-
-    # Reject if the model is broadly unsure, or top-1 and top-2 are near-tied.
-    if (norm_entropy > MAX_NORM_ENTROPY and top_prob < MIN_TOP_PROB) or \
-       (top_prob < MIN_TOP_PROB and margin < MIN_MARGIN):
-        return False, (
-            f"The model could not confidently identify this as a pomegranate leaf "
-            f"(top confidence {top_prob*100:.0f}%, margin {margin*100:.0f}%). "
-            f"Please try a clearer, well-lit close-up of a single leaf."
-        )
+    if norm_entropy > MAX_NORM_ENTROPY:
+        return False, "The model could not interpret this image. Please try a clearer photo."
     return True, "OK"
 
 
