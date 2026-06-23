@@ -126,14 +126,47 @@ def _center_subject_analysis(arr: np.ndarray) -> tuple[float, float]:
     return center_sat, center_rich
 
 
+# ── Face detection (rejects people / profile photos) ─────────────────────────
+
+@st.cache_resource(show_spinner=False)
+def _face_detector():
+    try:
+        import cv2
+        return cv2.CascadeClassifier(cv2.data.haarcascades + "haarcascade_frontalface_default.xml")
+    except Exception:
+        return None
+
+
+def _contains_face(arr: np.ndarray) -> bool:
+    """True if a human face is detected — a pomegranate never contains one."""
+    det = _face_detector()
+    if det is None:
+        return False
+    try:
+        import cv2
+        gray = cv2.cvtColor((arr * 255).astype(np.uint8), cv2.COLOR_RGB2GRAY)
+        faces = det.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5,
+                                     minSize=(40, 40))
+        return len(faces) > 0
+    except Exception:
+        return False
+
+
 # ── Stage 1 + 2: Pre-model validation ────────────────────────────────────────
 
 def _validate_pre_model(arr: np.ndarray) -> tuple[bool, str]:
     """
     Returns (is_valid, rejection_reason).
-    Runs before the CNN to reject blank / washed-out / non-photo inputs while
-    always accepting a real pomegranate fruit or leaf photo.
+    Runs before the CNN to reject blank / washed-out / non-photo inputs and
+    photos of people, while always accepting a real pomegranate fruit photo.
     """
+    # Stage 0 — face detection (profile pics / people are not pomegranates)
+    if _contains_face(arr):
+        return False, (
+            "A person was detected in this image. "
+            "Please upload a clear close-up photo of a pomegranate fruit."
+        )
+
     # Stage 1 — overall colour variation (blank / solid / flat screenshot)
     channel_std = float(arr.std(axis=(0, 1)).mean())
     if channel_std < MIN_COLOR_STD:
