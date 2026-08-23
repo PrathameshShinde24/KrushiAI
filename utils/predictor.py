@@ -89,10 +89,30 @@ def _download_model_if_needed():
 
 @st.cache_resource(show_spinner="Loading AI model…")
 def _load_model():
+    """
+    Rebuild the MobileNetV2 transfer-learning architecture and load the trained
+    weights. We load weights (not the full model) so a Keras version mismatch
+    between the training environment (Colab) and the runtime never breaks it —
+    weights are plain arrays, immune to serialization-format changes.
+    """
     if not _download_model_if_needed():
         return None
-    import tensorflow as tf
-    return tf.keras.models.load_model(MODEL_PATH)
+    try:
+        from tensorflow.keras.applications import MobileNetV2
+        from tensorflow.keras.layers import GlobalAveragePooling2D, Dropout, Dense
+        from tensorflow.keras.models import Model
+        base = MobileNetV2(weights=None, include_top=False,
+                           input_shape=(IMG_SIZE[0], IMG_SIZE[1], 3))
+        x = base.output
+        x = GlobalAveragePooling2D()(x)
+        x = Dropout(0.3)(x)
+        out = Dense(len(LABELS), activation="softmax")(x)
+        model = Model(base.input, out)
+        model.load_weights(MODEL_PATH)
+        return model
+    except Exception as e:
+        st.error(f"Could not load model: {e}")
+        return None
 
 
 # ── Stage 2: HSV plant-colour analysis ───────────────────────────────────────
@@ -235,7 +255,11 @@ def predict_disease(image: Image.Image) -> tuple[str, float, dict]:
             return "Invalid Image", 0.0, {}
 
         # ── Single CNN inference ──────────────────────────────────────────────
-        probs = model.predict(np.expand_dims(arr, 0), verbose=0)[0]
+        # MobileNetV2 expects preprocess_input (scales [0,255] → [-1,1]),
+        # NOT the ÷255 used for the colour-validation array above.
+        from tensorflow.keras.applications.mobilenet_v2 import preprocess_input
+        model_in = preprocess_input(arr * 255.0)          # arr is [0,1] → back to [0,255] → [-1,1]
+        probs = model.predict(np.expand_dims(model_in, 0), verbose=0)[0]
         conf  = round(float(np.max(probs)) * 100, 2)
         idx   = int(np.argmax(probs))
         probs_dict = {lbl: round(float(p) * 100, 2) for lbl, p in zip(LABELS, probs)}
