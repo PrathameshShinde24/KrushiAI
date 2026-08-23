@@ -38,3 +38,15 @@ Thumbs.db
 # Design system export (reference material, kept locally)
 *.zip
 design_export/
+
+# PPT build artifacts (node_modules)
+ppt_build/
+
+# Personal deliverables & working files (kept local, not for the repo)
+*.pptx
+~$*
+fig_output/
+fig_input/
+Image for RP/
+make_fig4.py
+demo_test/
