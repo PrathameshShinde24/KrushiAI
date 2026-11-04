@@ -50,3 +50,7 @@ fig_input/
 Image for RP/
 make_fig4.py
 demo_test/
+
+# Large unused media (kept locally)
+assets/videos/
+*.mp4
