@@ -4,7 +4,7 @@
 
 # KrushiAI
 
-**AI-Powered Pomegranate Leaf Disease Detection Platform**
+**AI-Powered Pomegranate Fruit Disease Detection Platform**
 
 [![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=flat-square&logo=python&logoColor=white)](https://python.org)
 [![Streamlit](https://img.shields.io/badge/Streamlit-1.51%2B-FF4B4B?style=flat-square&logo=streamlit&logoColor=white)](https://streamlit.io)
@@ -12,7 +12,7 @@
 [![MongoDB](https://img.shields.io/badge/MongoDB-Atlas-47A248?style=flat-square&logo=mongodb&logoColor=white)](https://mongodb.com/atlas)
 [![License](https://img.shields.io/badge/License-MIT-10b981?style=flat-square)](LICENSE)
 
-*Detect pomegranate leaf diseases instantly using deep learning — upload a photo or use your camera and get an AI diagnosis with treatment recommendations in seconds.*
+*Detect pomegranate fruit diseases instantly using deep learning — upload a photo or use your camera and get an AI diagnosis with treatment recommendations in seconds.*
 
 </div>
 
@@ -20,7 +20,7 @@
 
 ## Overview
 
-KrushiAI is a full-stack web application that helps farmers and agronomists identify pomegranate leaf diseases early using a trained Convolutional Neural Network (CNN). The platform provides real-time diagnostics, historical scan tracking, and data-driven field health insights through an intuitive dark-themed dashboard.
+KrushiAI is a full-stack web application that helps farmers and agronomists identify pomegranate fruit diseases early using a trained Convolutional Neural Network (CNN). The platform provides real-time diagnostics, historical scan tracking, and data-driven field health insights through an intuitive dark-themed dashboard.
 
 ### Detected Diseases
 
@@ -29,15 +29,15 @@ KrushiAI is a full-stack web application that helps farmers and agronomists iden
 | **Alternaria** | Fungal Infection | Medium Risk |
 | **Anthracnose** | Fungal Pathogen | High Risk |
 | **Bacterial Blight** | Bacterial Pathogen | High Risk |
-| **Cercospora** | Fungal Leaf Spot | Medium Risk |
+| **Cercospora** | Fungal Spot | Medium Risk |
 | **Healthy** | No Disease | No Risk |
 
 ---
 
 ## Features
 
-- **AI Diagnostic Scanner** — 3-stage image validation (color, HSV plant analysis, entropy) before CNN inference; returns per-class confidence bars
-- **Camera Support** — Scan leaves directly using your device's webcam, no upload required
+- **AI Diagnostic Scanner** — image checks before and after the CNN (face detection, colour variation, centre colour, prediction entropy) reject non-fruit photos; returns per-class confidence bars
+- **Camera Support** — Scan fruit directly using your device's webcam, no upload required
 - **Treatment Plans** — Each diagnosis includes 3 actionable treatment steps tailored to the identified disease
 - **Interactive Dashboard** — Stats overview, recent scans, and quick-action cards
 - **Scan History** — Full scan log with Plotly charts (disease breakdown donut + scans-over-time line), search, and delete
@@ -69,10 +69,10 @@ KrushiAI/
 ├── .env                       # Environment variables (not committed)
 │
 ├── models/
-│   └── pomegranate_model.h5   # Trained CNN model — 5-class, input (224,224,3)
+│   └── pomegranate_model.h5   # Trained MobileNetV2 weights — 5-class, input (224,224,3)
 │
 ├── utils/
-│   ├── predictor.py           # Model inference + 3-stage image validation
+│   ├── predictor.py           # Model inference + image validation
 │   ├── database.py            # MongoDB Atlas — CRUD, aggregation pipeline, TTL indexes
 │   ├── auth.py                # Authentication, rate limiting, password policy, XSS prevention
 │   ├── i18n.py                # Translations — English, Hindi (हिंदी), Marathi (मराठी)
@@ -96,7 +96,7 @@ KrushiAI/
 
 ### Prerequisites
 
-- Python 3.10 or higher
+- Python 3.10 or higher (the code uses `str | None` type hints, so Python 3.9 will not start it)
 - A [MongoDB Atlas](https://mongodb.com/atlas) account (free tier works)
 - The trained model file `pomegranate_model.h5` placed in the `models/` directory
 
@@ -115,11 +115,16 @@ pip install -r requirements.txt
 
 ### 3. Configure environment variables
 
-Create a `.env` file in the project root:
+Copy `.env.example` to `.env` in the project root and fill in your values:
 
 ```env
 MONGODB_URI=mongodb+srv://<username>:<password>@<cluster>.mongodb.net/?appName=KrushiAI
 MONGODB_DB=krushiai
+
+# Optional
+OPENWEATHER_API_KEY=<your OpenWeatherMap key>   # Weather page
+NEWS_API_KEY=<your NewsAPI key>                 # Agri Hub news
+MODEL_URL=<direct or Google Drive link to the .h5>  # downloads the model if models/ is empty
 ```
 
 > **Never commit your `.env` file.** It is already listed in `.gitignore`.
@@ -132,7 +137,9 @@ Place your trained model at:
 models/pomegranate_model.h5
 ```
 
-The model must accept input shape `(224, 224, 3)` and output 5 classes in this order:
+Or set `MODEL_URL` in `.env` and the app downloads it on first run.
+
+The file must hold weights for a MobileNetV2 base + GlobalAveragePooling2D + Dropout(0.3) + Dense(5, softmax) head, with input shape `(224, 224, 3)` and the 5 classes in this order:
 
 ```
 ["Alternaria", "Anthracnose", "Bacterial Blight", "Cercospora", "Healthy"]
@@ -177,13 +184,15 @@ KrushiAI implements several security layers:
 
 ## Model Information
 
-The CNN model (`pomegranate_model.h5`) was trained to classify pomegranate leaf images into 5 categories. During inference:
+The CNN (`pomegranate_model.h5`) is a MobileNetV2 transfer-learning model trained to classify pomegranate fruit images into 5 categories. The app rebuilds the architecture and loads only the weights, so a Keras version difference between training and runtime doesn't break loading. During inference:
 
 1. The input image is resized to `224×224` pixels
-2. Pixel values are normalized to `[0, 1]`
-3. The model outputs a softmax probability distribution over 5 classes
-4. The class with the highest probability is returned as the diagnosis along with its confidence score
-5. All 5 class probabilities are shown as visual bars in the result card
+2. The image is checked (no faces, enough colour variation, a colourful subject in the centre); failing photos return `"Invalid Image"`
+3. Pixels are scaled to `[-1, 1]` with MobileNetV2's `preprocess_input`
+4. The model outputs a softmax probability distribution over 5 classes
+5. If the probabilities are almost uniform (the model is guessing), the result is `"Invalid Image"`
+6. Otherwise the class with the highest probability is returned as the diagnosis along with its confidence score
+7. All 5 class probabilities are shown as visual bars in the result card
 
 If the model file is missing, the app gracefully handles the error and returns `"Invalid Image"`.
 

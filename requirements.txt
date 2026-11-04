@@ -7,4 +7,4 @@ pymongo>=4.6.0
 dnspython>=2.4.0
 python-dotenv>=1.0.0
 requests>=2.31.0
-opencv-python>=4.8.0
+opencv-python>=4.8.0,<5   # OpenCV 5 removed CascadeClassifier (used for face rejection)

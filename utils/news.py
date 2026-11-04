@@ -32,7 +32,7 @@ FARMING_TIPS = [
     ("💧", "Water Management",
      "Drip irrigation saves up to 50% water vs flood irrigation. Apply for PMKSY subsidy (55% for small farmers) to install it affordably."),
     ("🔬", "Early Disease Detection",
-     "Inspect leaves every week — early detection of Alternaria or Anthracnose prevents 60–70% of yield loss. Use KrushiAI Scanner regularly."),
+     "Inspect fruit and leaves every week — early detection of Alternaria or Anthracnose prevents 60–70% of yield loss. Use KrushiAI Scanner regularly."),
     ("🌿", "Organic Matter",
      "Add compost or farmyard manure (FYM) before planting to improve soil structure, water retention, and microbial activity."),
     ("🌾", "Crop Rotation",

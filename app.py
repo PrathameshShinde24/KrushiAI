@@ -1,7 +1,7 @@
 import streamlit as st
 import base64
 import os
-from html import escape as _esc
+from html import escape as _esc, unescape as _unesc
 from PIL import Image
 
 from utils.auth         import sign_in, sign_up, change_password, update_profile_name
@@ -18,7 +18,7 @@ from utils.news         import fetch_agri_news, get_tip_of_day, get_all_tips
 REMEDIES = {
     "Bacterial Blight": [
         ("Apply Fungicide Immediately",  "Use Streptocycline (0.5 g/L) + Copper Oxychloride (3 g/L) as a protectant spray."),
-        ("Remove Infected Foliage",      "Carefully prune and destroy infected leaves to slow spread. Do not compost."),
+        ("Remove Infected Fruit",        "Pick and destroy infected fruit and leaves to slow spread. Do not compost."),
         ("Avoid Overhead Irrigation",    "Switch to drip irrigation to keep foliage dry. Repeat treatment every 10–14 days."),
     ],
     "Anthracnose": [
@@ -34,12 +34,12 @@ REMEDIES = {
     "Cercospora": [
         ("Apply Copper-Based Fungicide", "Spray Copper Oxychloride (3 g/L) every 10–14 days during humid periods."),
         ("Increase Plant Spacing",       "Improve air circulation by thinning dense canopy to reduce leaf wetness."),
-        ("Remove Infected Leaves",       "Prune and destroy leaves showing circular brown spots immediately."),
+        ("Remove Infected Fruit",        "Remove and destroy fruit and leaves showing brown spots immediately."),
     ],
     "Healthy": [
         ("Maintain Watering Schedule",   "Regular, consistent watering promotes strong root development."),
         ("Apply Balanced Fertilizer",    "Use balanced NPK fertilization monthly during the growing season."),
-        ("Inspect Weekly",               "Early detection is key — inspect leaves weekly for early signs of disease."),
+        ("Inspect Weekly",               "Early detection is key — inspect fruit and leaves weekly for early signs of disease."),
     ],
 }
 
@@ -47,7 +47,7 @@ DISEASE_META = {
     "Bacterial Blight": {"color": "#f87171", "icon_bg": "rgba(248,113,113,0.12)", "icon": "🦠", "type": "Bacterial Pathogen",  "severity": "High Risk",   "sev_color": "#f87171", "detected": True},
     "Anthracnose":      {"color": "#f87171", "icon_bg": "rgba(248,113,113,0.12)", "icon": "🍄", "type": "Fungal Pathogen",     "severity": "High Risk",   "sev_color": "#f87171", "detected": True},
     "Alternaria":       {"color": "#fbbf24", "icon_bg": "rgba(251,191,36,0.12)",  "icon": "🌫", "type": "Fungal Infection",    "severity": "Medium Risk", "sev_color": "#fbbf24", "detected": True},
-    "Cercospora":       {"color": "#fbbf24", "icon_bg": "rgba(251,191,36,0.12)",  "icon": "🔵", "type": "Fungal Leaf Spot",    "severity": "Medium Risk", "sev_color": "#fbbf24", "detected": True},
+    "Cercospora":       {"color": "#fbbf24", "icon_bg": "rgba(251,191,36,0.12)",  "icon": "🔵", "type": "Fungal Spot",         "severity": "Medium Risk", "sev_color": "#fbbf24", "detected": True},
     "Healthy":          {"color": "#10b981", "icon_bg": "rgba(16,185,129,0.12)",  "icon": "🌿", "type": "No Disease Detected", "severity": "No Risk",     "sev_color": "#10b981", "detected": False},
     "Invalid Image":    {"color": "#64748b", "icon_bg": "rgba(100,116,139,0.12)", "icon": "❓", "type": "Unrecognized Image",  "severity": "—",           "sev_color": "#64748b", "detected": False},
 }
@@ -160,13 +160,12 @@ def _page_login():
 
         if st.session_state.auth_tab == "login":
             st.markdown(f'<p class="auth-form-title">{_t("welcome_back")}</p>', unsafe_allow_html=True)
+            notice = st.session_state.pop("auth_notice", None)
+            if notice:
+                st.success(notice)
             st.markdown(f'<label class="field-label">{_t("email")}</label>', unsafe_allow_html=True)
             email = st.text_input("e1", placeholder="you@example.com", key="li_email", label_visibility="collapsed")
-            c1, c2 = st.columns([3, 1])
-            with c1:
-                st.markdown(f'<label class="field-label">{_t("password")}</label>', unsafe_allow_html=True)
-            with c2:
-                st.markdown('<span class="forgot-link">Forgot?</span>', unsafe_allow_html=True)
+            st.markdown(f'<label class="field-label">{_t("password")}</label>', unsafe_allow_html=True)
             pwd = st.text_input("p1", type="password", placeholder="••••••••", key="li_pwd", label_visibility="collapsed")
 
             if st.button(_t("sign_in"), width="stretch", key="btn_login"):
@@ -202,7 +201,8 @@ def _page_login():
                     with st.spinner("Creating account…"):
                         ok = sign_up(email, pwd, name)
                     if ok:
-                        st.success("Account created! Please sign in.")
+                        # st.rerun() would wipe a st.success() here, so show it on the login form
+                        st.session_state.auth_notice = "Account created! Please sign in."
                         st.session_state.auth_tab = "login"
                         st.rerun()
 
@@ -211,13 +211,7 @@ def _page_login():
                 st.session_state.auth_tab = "login"
                 st.rerun()
 
-        st.markdown("""
-            <p class="auth-terms">
-                By continuing, you agree to our
-                <a href="#" class="auth-link">Terms of Service</a> and
-                <a href="#" class="auth-link">Privacy Policy</a>.
-            </p>
-        </div>""", unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
 
 # ── App shell ─────────────────────────────────────────────────────────────────
 
@@ -372,7 +366,7 @@ def _tab_dashboard():
             for s in recent:
                 lbl  = s["disease_type"]
                 conf = s["confidence"]
-                date = str(s["created_at"])[5:16]
+                date = s["created_short"]
                 meta = DISEASE_META.get(lbl, DISEASE_META["Invalid Image"])
                 st.markdown(f"""
                 <div class="recent-row">
@@ -431,7 +425,7 @@ def _tab_scanner():
         img = None; img_source = None
 
         with tab_upload:
-            uploaded = st.file_uploader("leaf", type=["jpg","jpeg","png"], label_visibility="collapsed")
+            uploaded = st.file_uploader("fruit", type=["jpg","jpeg","png"], label_visibility="collapsed")
             if uploaded:
                 img = Image.open(uploaded); img_source = uploaded.name
                 st.image(img, width="stretch")
@@ -458,7 +452,7 @@ def _tab_scanner():
                 </div>""", unsafe_allow_html=True)
 
         if img:
-            if st.button(f"🔬  {_t('analyze_leaf')}", key="btn_analyze", width="stretch"):
+            if st.button(_t('analyze_fruit'), key="btn_analyze", width="stretch"):
                 with st.spinner("Running AI analysis…"):
                     # Single model inference — returns label, conf and all probs at once
                     label, conf, probs_dict = predict_disease(img)
@@ -629,7 +623,7 @@ def _render_charts(history: list):
         st.markdown(f'<p class="section-label">{_t("scans_over_time")}</p>', unsafe_allow_html=True)
         date_counts: dict = {}
         for s in history:
-            d = str(s["created_at"])[:10]
+            d = s["created_day"]
             date_counts[d] = date_counts.get(d, 0) + 1
         if date_counts:
             xs = sorted(date_counts); ys = [date_counts[d] for d in xs]
@@ -696,7 +690,7 @@ def _tab_history():
     for s in filtered:
         lbl  = s["disease_type"]
         conf = s["confidence"]
-        date = str(s["created_at"])[5:16]
+        date = s["created_short"]
         sid  = s["id"]
         meta = DISEASE_META.get(lbl, DISEASE_META["Invalid Image"])
 
@@ -1044,12 +1038,14 @@ def _tab_profile():
     with left:
         st.markdown(f'<div class="settings-card"><p class="sc-title">{_t("account_info")}</p>',
                     unsafe_allow_html=True)
-        new_name = st.text_input(_t("full_name"), value=name, key="p_name")
-        st.text_input("Email", value=email, disabled=True, key="p_email")
+        # user.name / user.email are HTML-escaped for templates; text inputs
+        # need the plain text, or "O'Brien" is saved as "O&#x27;Brien".
+        new_name = st.text_input(_t("full_name"), value=_unesc(name), key="p_name")
+        st.text_input("Email", value=_unesc(email), disabled=True, key="p_email")
         st.text_input(_t("member_since"), value=joined, disabled=True, key="p_joined")
         if st.button(_t("save_changes"), key="btn_update_name", width="stretch"):
             if update_profile_name(user.id, new_name):
-                user.name = new_name.strip()
+                user.name = _esc(new_name.strip())   # keep the escaped-in-memory rule
                 st.session_state.user = user
                 st.success("Profile updated!")
                 st.rerun()
@@ -1069,8 +1065,7 @@ def _tab_profile():
                     st.error("Passwords do not match.")
                 elif change_password(user.id, old, new1):
                     st.success("Password updated successfully!")
-                else:
-                    st.error("Current password is incorrect.")
+                # on failure, change_password has already shown the reason
         st.markdown('</div>', unsafe_allow_html=True)
 
         st.markdown(f"""

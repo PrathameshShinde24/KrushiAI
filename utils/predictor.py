@@ -7,10 +7,10 @@ Validation pipeline — runs BEFORE and AFTER the CNN:
       Rejects solid-color blocks, blank images, screenshots of text.
       Uses per-channel standard deviation.
 
-  Stage 2 — HSV plant-color analysis
-      Checks what fraction of pixels fall in green / yellow-green /
-      yellow-brown / necrotic-brown HSV ranges typical of leaves.
-      Rejects cars, people, food, logos, skies, etc.
+  Stage 2 — Centre colour analysis
+      Checks that a vividly coloured, saturated subject (the red / pink /
+      yellow pomegranate fruit) fills the centre of the frame.
+      Rejects documents, blank frames and grayscale screenshots.
 
   Stage 3 — Post-model entropy check
       After the CNN runs, examines the full 5-class probability
@@ -19,10 +19,10 @@ Validation pipeline — runs BEFORE and AFTER the CNN:
 
 Why NOT a fixed confidence threshold
 --------------------------------------
-  A real pomegranate leaf can score 72-78% (moderate confidence).
-  A random non-leaf image can score 84%+ for one class.
+  A real pomegranate fruit can score 72-78% (moderate confidence).
+  A random non-fruit image can score 84%+ for one class.
   A threshold would break both cases simultaneously.
-  Stages 1-2 catch non-leaf images; Stage 3 catches edge cases
+  Stages 1-2 catch non-fruit images; Stage 3 catches edge cases
   that slip through, regardless of what the top confidence is.
 """
 

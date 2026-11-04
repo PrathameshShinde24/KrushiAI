@@ -19,9 +19,11 @@ from utils.database import (
     hash_password, verify_password,
     record_failed_login, is_rate_limited,
     clear_login_attempts, get_remaining_lockout,
+    MAX_ATTEMPTS,
 )
 
-_EMAIL_RE    = re.compile(r"^[\w.+\-]+@[\w\-]+\.[a-zA-Z]{2,}$")
+# Allows multi-part domains such as college.ac.in or mail.example.com
+_EMAIL_RE    = re.compile(r"^[\w.+\-]+@(?:[\w\-]+\.)+[a-zA-Z]{2,}$")
 _UPPER_RE    = re.compile(r"[A-Z]")
 _DIGIT_RE    = re.compile(r"[0-9]")
 _SPECIAL_RE  = re.compile(r"[!@#$%^&*(),.?\":{}|<>\-_]")
@@ -98,8 +100,8 @@ def sign_in(email: str, password: str):
 
     # ── Verify password ───────────────────────────────────────────────────────
     if not verify_password(password, doc["password"], salt):
-        record_failed_login(email)
-        remaining_attempts = 5 - (doc.get("attempts", 0) + 1)
+        attempts = record_failed_login(email)
+        remaining_attempts = MAX_ATTEMPTS - attempts
         if remaining_attempts > 0:
             st.error(f"Invalid email or password. {remaining_attempts} attempt(s) remaining.")
         else:
@@ -138,13 +140,16 @@ def sign_up(email: str, password: str, name: str) -> bool:
 
 
 def change_password(user_id: str, old_password: str, new_password: str) -> bool:
-    """Change password — verifies old password first."""
+    """Change password — verifies old password first.
+    Shows its own error message and returns False on any failure."""
     doc = find_user_by_id(user_id)
     if not doc:
+        st.error("Account not found. Please sign in again.")
         return False
 
     salt = doc.get("salt")
     if not salt or not verify_password(old_password, doc["password"], salt):
+        st.error("Current password is incorrect.")
         return False
 
     pwd_error = _check_password_strength(new_password)

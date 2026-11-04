@@ -10,7 +10,7 @@ import os
 import hashlib
 import streamlit as st
 from datetime import datetime, timezone
-from pymongo import MongoClient, DESCENDING
+from pymongo import MongoClient, DESCENDING, ReturnDocument
 from pymongo.errors import DuplicateKeyError
 from bson import ObjectId
 from dotenv import load_dotenv
@@ -35,7 +35,9 @@ MONGO_DB  = _get_secret("MONGODB_DB", "krushiai")
 
 @st.cache_resource(show_spinner=False)
 def _client() -> MongoClient:
-    return MongoClient(MONGO_URI, serverSelectionTimeoutMS=5000)
+    # tz_aware=True: dates come back as UTC-aware datetimes, so they can be
+    # compared with datetime.now(timezone.utc) (the lockout check does this).
+    return MongoClient(MONGO_URI, serverSelectionTimeoutMS=5000, tz_aware=True)
 
 def _db():
     return _client()[MONGO_DB]
@@ -59,8 +61,21 @@ def verify_password(password: str, stored_hash: str, salt: str) -> bool:
 
 # ── Schema / Indexes ───────────────────────────────────────────────────────────
 
+_SETUP_HELP = (
+    "Create a file named `.env` in the project folder (copy `.env.example`) "
+    "and set `MONGODB_URI` to your MongoDB Atlas connection string, then "
+    "restart the app."
+)
+
 def init_db():
-    """Create indexes. Safe to call on every startup (idempotent)."""
+    """Check the database is set up, then create indexes.
+    Safe to call on every startup (idempotent). Stops the page with a
+    setup message if MongoDB isn't configured or can't be reached."""
+    if not MONGO_URI:
+        st.error("**Database not set up.** `MONGODB_URI` is missing. " + _SETUP_HELP)
+        st.stop()
+
+    problem = None
     try:
         db = _db()
         db.users.create_index("email", unique=True)
@@ -72,7 +87,17 @@ def init_db():
             "last_attempt", expireAfterSeconds=900
         )
     except Exception as e:
-        st.warning(f"DB init warning: {e}")
+        problem = e
+
+    if problem is not None:
+        # Message names the error type only, never the URI (it holds the password)
+        st.error(
+            f"**Can't connect to the database** ({type(problem).__name__}). "
+            "Check that `MONGODB_URI` in `.env` is correct, your username and "
+            "password are right, and your IP address is allowed in MongoDB "
+            "Atlas → Network Access."
+        )
+        st.stop()
 
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
@@ -104,17 +129,18 @@ def save_scan_result(user_id: str, disease_name: str,
 MAX_ATTEMPTS  = 5          # max failed logins
 LOCKOUT_SECS  = 15 * 60   # 15-minute lockout window
 
-def record_failed_login(email: str):
-    """Increment failed login counter for this email."""
-    _db().login_attempts.update_one(
+def record_failed_login(email: str) -> int:
+    """Increment failed login counter for this email. Returns the new count."""
+    doc = _db().login_attempts.find_one_and_update(
         {"email": email.lower()},
         {
             "$inc": {"attempts": 1},
             "$set": {"last_attempt": datetime.now(timezone.utc)},
-            "$setOnInsert": {"email": email.lower()},
         },
         upsert=True,
+        return_document=ReturnDocument.AFTER,
     )
+    return int((doc or {}).get("attempts", 1))
 
 def is_rate_limited(email: str) -> bool:
     """Return True if this email is locked out due to too many failures."""
@@ -169,13 +195,19 @@ def fetch_scan_history(user_id: str) -> list[dict]:
 
     results = []
     for doc in cursor:
+        created = doc.get("created_at")
+        is_dt   = isinstance(created, datetime)
         results.append({
             "id":           str(doc["_id"]),
             "user_id":      str(doc["user_id"]),
             "disease_type": doc.get("disease_type", ""),
             "confidence":   doc.get("confidence", 0.0),
             "image_name":   doc.get("image_name"),
-            "created_at":   _fmt_date(doc.get("created_at", "")),
+            "created_at":   _fmt_date(created or ""),
+            # Short label for list rows, e.g. "Nov 04, 21:58"
+            "created_short": created.strftime("%b %d, %H:%M") if is_dt else str(created or ""),
+            # Sortable day key for the scans-over-time chart, e.g. "2026-11-04"
+            "created_day":  created.strftime("%Y-%m-%d") if is_dt else str(created or "")[:10],
         })
     return results
 

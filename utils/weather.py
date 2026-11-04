@@ -81,7 +81,7 @@ def get_disease_risk(w: dict) -> dict:
             "advice": [
                 "Apply preventive fungicide immediately (Mancozeb 2.5 g/L or Copper Oxychloride 3 g/L).",
                 "Switch to drip irrigation — avoid all overhead watering.",
-                "Inspect leaves daily for Alternaria, Anthracnose, and Cercospora symptoms.",
+                "Inspect fruit and leaves daily for Alternaria, Anthracnose, and Cercospora symptoms.",
                 "Prune dense canopy areas to improve air circulation.",
             ],
         }
@@ -92,7 +92,7 @@ def get_disease_risk(w: dict) -> dict:
                 "Monitor plants closely over the next 48–72 hours.",
                 "Apply copper-based fungicide as a precaution.",
                 "Avoid waterlogging — ensure drainage channels are clear.",
-                "Check for early Cercospora leaf spot symptoms.",
+                "Check fruit for early Cercospora spot symptoms.",
             ],
         }
     else:
@@ -102,6 +102,6 @@ def get_disease_risk(w: dict) -> dict:
                 "Conditions are favourable — maintain regular watering schedule.",
                 "Good time to apply balanced NPK fertilizer.",
                 "Ideal weather for pruning and canopy management.",
-                "Continue weekly leaf inspections as a preventive measure.",
+                "Continue weekly fruit inspections as a preventive measure.",
             ],
         }
