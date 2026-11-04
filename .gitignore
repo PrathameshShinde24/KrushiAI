@@ -23,9 +23,6 @@ secrets.toml
 *.pt
 *.pth
 
-# Claude Code
-.claude/
-
 # IDE
 .idea/
 .vscode/
